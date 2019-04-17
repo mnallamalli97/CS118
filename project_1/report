@@ -1,0 +1,14 @@
+
+
+1. Give a high-level description of your server’s design.
+
+2. What difficulties did you face and how did you solve them?
+
+3. Include a brief manual in the report to explain how to compile and run your source code
+(if TAs cannot compile and run your source code by reading your manual, the project is
+considered not to be finished).
+
+4. Include and briefly explain some sample outputs of your client-server (e.g. in Part A you
+should be able to see an HTTP request). You do not have to write a lot of details about the
+code, but just adequately comment your source code. The cover page of the report should
+include the name of the course and project, your partner’s name, and student ID.
