@@ -1,7 +1,3 @@
-//Name: Chaitanya Pedada
-//UID: 404729909
-//Email: cpedada@ucla.edu
-
 #include <termios.h>
 #include <unistd.h>
 #include <stdio.h>
@@ -22,6 +18,7 @@
 #include <mcrypt.h>
 
 #define MAX_LENGTH 8332
+#define FILE_PATH_SIZE 10000
 
 void sighandler(int);
 
@@ -153,6 +150,27 @@ int main(int argc, char* argv[]){
 		if(bytesRead < 0){
 			fprintf(stderr, "Unable to read from client. %s\r\n", strerror(errno));
 			exit(1)
+		}
+
+		write(0, &input, strlen(input));
+
+		//GET request, parse for 'GET' + char for null byte
+		char get[4] = "GET";
+		if (strcmp(input, get, 3) != 0)
+		{
+			printf("the request type is not get\n");
+			exit(1);
+		}
+
+		//get the file path, start at the 5th char because first 3 is GET, 4 is nullbyte
+
+		char filepath[FILE_PATH_SIZE];
+		for (int i = 0; i < FILE_PATH_SIZE; ++i)
+		{
+			if (input[i] == ' ')
+			{
+				break;
+			}
 		}
 
 		
