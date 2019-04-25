@@ -186,30 +186,36 @@ int main(int argc, char* argv[]){
 		// char stat[MAX_LENGTH] = " 200 OK\n";
 		// strcat(response, stat);
 		// printf("%s\n 200 OK\n", version);
-		// // char buf[1000];
-  // // 		time_t now = time(0);
-  // // 		struct tm tm = *gmtime(&now);
- 	// 	// strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
-  // // 		printf("Time is: [%s]\n", buf);
 
-		// time_t t = time(NULL);
-		// struct tm tm = *localtime(&t);
 
-		// char time[80];
-		// strftime(time, sizeof(time), "%a, %d %b %Y %X %Z\n", &tm);
-		// // printf("Date: %s\n", time);
-		// strcat(response, "Date: ");
-		// strcat(response, time);
-		// printf("%s", response);
+		// char buf[1000];
+		// time_t now = time(0);
+		// struct tm tm = *gmtime(&now);
+		// strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+		// printf("Time is: [%s]\n", buf);
+
+		time_t t = time(NULL);
+		struct tm tm = *localtime(&t);
+
+		char time[80];
+		strftime(time, sizeof(time), "%a, %d %b %Y %X %Z\n", &tm);
+		// printf("Date: %s\n", time);
+
+		//empty response array
+		memset(response, 0, strlen(response));
+
+		strcat(response, "Date: ");
+		strcat(response, time);
+		printf("%s", response);
 		// fprintf(stdout, "%s\n", version);
-		// fprintf(stdout, "%s\n", filepath);
+		fprintf(stdout, "%s\n", filepath);
 
 		// open file
-		// fp = fopen(filepath, "r");
-		// if(fp == NULL){
-		// 	printf("cannot open\n");
-		// 	exit(1);
-		// }
+		fp = fopen(filepath, "r");
+		if(fp == NULL){
+			printf("cannot open\n");
+			exit(1);
+		}
 
 
 	}
