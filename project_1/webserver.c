@@ -15,7 +15,7 @@
 #include <netdb.h>
 #include <sys/time.h>
 #include <sys/select.h>
-#include <mcrypt.h>
+// #include <mcrypt.h>
 
 #define MAX_LENGTH 8332
 #define FILE_PATH_SIZE 10000
@@ -118,11 +118,11 @@ int main(int argc, char* argv[]){
 	// 	}
 	// }
 	
-	if (argc != 2){
-		fprintf(stderr, "invalid arguments. Must be port and file. %s\r\n", strerr(errno));
+	if (argc < 2){
+		fprintf(stderr, "invalid arguments. Must be port and file. %s\r\n", strerror(errno));
 	}
 
-	int port = atoi(argv[1]);
+	port = atoi(argv[1]);
 	int sock;
 	struct sockaddr_in clientname;
 	socklen_t size;
@@ -138,7 +138,7 @@ int main(int argc, char* argv[]){
 	// int p2c[2];
 	int newsock;
 	size = sizeof(clientname);
-	char input[MAX_LENGTH];
+	char input[MAX_LENGTH] = {0};
 
 	while(1){
 		newsock = accept(sock, (struct sockaddr *) &clientname, &size);
@@ -149,29 +149,32 @@ int main(int argc, char* argv[]){
 		int bytesRead = read(newsock, &input, MAX_LENGTH);
 		if(bytesRead < 0){
 			fprintf(stderr, "Unable to read from client. %s\r\n", strerror(errno));
-			exit(1)
-		}
-
-		write(0, &input, strlen(input));
-
-		//GET request, parse for 'GET' + char for null byte
-		char get[4] = "GET";
-		if (strcmp(input, get, 3) != 0)
-		{
-			printf("the request type is not get\n");
 			exit(1);
 		}
 
-		//get the file path, start at the 5th char because first 3 is GET, 4 is nullbyte
+		fprintf(stdout, "%s\n", input);
 
-		char filepath[FILE_PATH_SIZE];
-		for (int i = 0; i < FILE_PATH_SIZE; ++i)
-		{
-			if (input[i] == ' ')
-			{
-				break;
-			}
-		}
+
+		// write(1, &input, strlen(input));
+
+		// //GET request, parse for 'GET' + char for null byte
+		// char get[4] = "GET";
+		// if (strcmp(input, get, 3) != 0)
+		// {
+		// 	printf("the request type is not get\n");
+		// 	exit(1);
+		// }
+
+		// //get the file path, start at the 5th char because first 3 is GET, 4 is nullbyte
+
+		// char filepath[FILE_PATH_SIZE];
+		// for (int i = 0; i < FILE_PATH_SIZE; ++i)
+		// {
+		// 	if (input[i] == ' ')
+		// 	{
+		// 		break;
+		// 	}
+		// }
 
 		
 	}

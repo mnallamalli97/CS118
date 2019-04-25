@@ -1,5 +1,5 @@
 default: 
-	gcc -o -Wall -Wextra webserver webserver.c
+	gcc -Wall -Wextra -o webserver webserver.c
 dist: 
 	tar -czvf 804769644.tar.gz webserver.c Makefile README report.pdf
 clean: 
