@@ -172,13 +172,16 @@ int main(int argc, char* argv[]){
 			version[i] = input[versionStart+i];
 		}
 		// version[9] = '\n';
-		// char response[MAX_LENGTH] = "";
-		write(1, version, sizeof(version));
-		char stat[9] = " 200 OK\n";
-		fflush(stdout);
-		write(1, stat, sizeof(stat));
-		// strcpy(response, version);
-		// printf("%s\n", version);
+		char response[MAX_LENGTH] = "";
+		
+		// char stat[9] = " 200 OK\n";
+
+		strcpy(response, version);
+
+		response[strlen(response) -1 ] = '\0';
+
+		printf("%s 200 OK \n", response );
+
 		// // response = version;
 		// char stat[MAX_LENGTH] = " 200 OK\n";
 		// strcat(response, stat);
