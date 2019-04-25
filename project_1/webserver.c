@@ -1,21 +1,17 @@
-#include <termios.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <signal.h>
 #include <sys/types.h>
-#include <poll.h>
 #include <sys/wait.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <sys/time.h>
 #include <sys/select.h>
-// #include <mcrypt.h>
+#include <dirent.h>
 
 #define MAX_LENGTH 8332
 #define FILE_PATH_SIZE 10000
@@ -23,6 +19,7 @@
 void sighandler(int);
 
 int port;
+FILE* fp = NULL;
 // char *program = "/bin/bash";
 // pid_t pid;
 // int keyfd;
@@ -133,9 +130,6 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 
-	// char lf = '\n';
-	// int c2p[2];
-	// int p2c[2];
 	int newsock;
 	size = sizeof(clientname);
 	char input[MAX_LENGTH] = {0};
@@ -154,29 +148,67 @@ int main(int argc, char* argv[]){
 
 		fprintf(stdout, "%s\n", input);
 
+		//get the file path, start at the 4th char because first 3 (0-2) is GET, 3 is a space
 
-		// write(1, &input, strlen(input));
+		char filepath[FILE_PATH_SIZE];
+		strcpy(filepath, ".");
+		// fprintf(stdout, "%s\n", filepath);
 
-		// //GET request, parse for 'GET' + char for null byte
-		// char get[4] = "GET";
-		// if (strcmp(input, get, 3) != 0)
-		// {
-		// 	printf("the request type is not get\n");
+		int versionStart = 0;
+		for(int i = 1; i < FILE_PATH_SIZE; i++){
+			if(input[i+3] == ' '){
+				versionStart = i+4;
+				break;
+			}
+			else{
+				filepath[i] = input[i+3];
+			}
+		}
+
+		// printf("%s\n", filepath);
+
+		char version[10];
+		for(int i = 0; i < 9; i++){
+			version[i] = input[versionStart+i];
+		}
+		// version[9] = '\n';
+		// char response[MAX_LENGTH] = "";
+		write(1, version, sizeof(version));
+		char stat[9] = " 200 OK\n";
+		fflush(stdout);
+		write(1, stat, sizeof(stat));
+		// strcpy(response, version);
+		// printf("%s\n", version);
+		// // response = version;
+		// char stat[MAX_LENGTH] = " 200 OK\n";
+		// strcat(response, stat);
+		// printf("%s\n 200 OK\n", version);
+		// // char buf[1000];
+  // // 		time_t now = time(0);
+  // // 		struct tm tm = *gmtime(&now);
+ 	// 	// strftime(buf, sizeof buf, "%a, %d %b %Y %H:%M:%S %Z", &tm);
+  // // 		printf("Time is: [%s]\n", buf);
+
+		// time_t t = time(NULL);
+		// struct tm tm = *localtime(&t);
+
+		// char time[80];
+		// strftime(time, sizeof(time), "%a, %d %b %Y %X %Z\n", &tm);
+		// // printf("Date: %s\n", time);
+		// strcat(response, "Date: ");
+		// strcat(response, time);
+		// printf("%s", response);
+		// fprintf(stdout, "%s\n", version);
+		// fprintf(stdout, "%s\n", filepath);
+
+		// open file
+		// fp = fopen(filepath, "r");
+		// if(fp == NULL){
+		// 	printf("cannot open\n");
 		// 	exit(1);
 		// }
 
-		// //get the file path, start at the 5th char because first 3 is GET, 4 is nullbyte
 
-		// char filepath[FILE_PATH_SIZE];
-		// for (int i = 0; i < FILE_PATH_SIZE; ++i)
-		// {
-		// 	if (input[i] == ' ')
-		// 	{
-		// 		break;
-		// 	}
-		// }
-
-		
 	}
 
 
