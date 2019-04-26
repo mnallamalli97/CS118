@@ -11,6 +11,7 @@
 #include <netdb.h>
 #include <sys/time.h>
 #include <sys/select.h>
+#include <sys/stat.h>
 #include <dirent.h>
 
 #define MAX_LENGTH 8332
@@ -208,7 +209,7 @@ int main(int argc, char* argv[]){
 		strcat(response, time);
 		printf("%s", response);
 		// fprintf(stdout, "%s\n", version);
-		fprintf(stdout, "%s\n", filepath);
+		// fprintf(stdout, "%s\n", filepath);
 
 		// open file
 		fp = fopen(filepath, "r");
@@ -217,6 +218,18 @@ int main(int argc, char* argv[]){
 			exit(1);
 		}
 
+		// https://techoverflow.net/2013/08/21/how-to-get-filesize-using-stat-in-cc/
+		struct stat st;
+		if(stat(filepath, &st) != 0){
+			fprintf(stderr, "could not obtain file size");
+			exit(1);
+		}
+		char content_length[100];
+		sprintf(content_length, "Content-Length: %lld\n", st.st_size);
+		// fprintf(stdout, "%lld\n", st.st_size);
+		printf("%s\n", content_length);
+
+		
 
 	}
 
