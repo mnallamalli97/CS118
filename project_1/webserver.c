@@ -13,6 +13,7 @@
 #include <sys/select.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <sys/mman.h>
 
 #define MAX_LENGTH 8332
 #define FILE_PATH_SIZE 10000
@@ -21,6 +22,7 @@ void sighandler(int);
 
 int port;
 FILE* fp = NULL;
+char *addr;
 // char *program = "/bin/bash";
 // pid_t pid;
 // int keyfd;
@@ -134,6 +136,7 @@ int main(int argc, char* argv[]){
 	int newsock;
 	size = sizeof(clientname);
 	char input[MAX_LENGTH] = {0};
+	char output[MAX_LENGTH] = {0};
 
 	while(1){
 		newsock = accept(sock, (struct sockaddr *) &clientname, &size);
@@ -180,8 +183,10 @@ int main(int argc, char* argv[]){
 		strcpy(response, version);
 
 		response[strlen(response) -1 ] = '\0';
-
-		printf("%s 200 OK \n", response );
+		// char firstline[100];
+		// printf("%s 200 OK \n", response);
+		write(newsock, response, strlen(response));
+		write(newsock, " 200 OK\n", 8);
 
 		// // response = version;
 		// char stat[MAX_LENGTH] = " 200 OK\n";
@@ -207,11 +212,14 @@ int main(int argc, char* argv[]){
 
 		strcat(response, "Date: ");
 		strcat(response, time);
-		printf("%s", response);
+
+		write(newsock, response, strlen(response));
+		// printf("%s", response);
 		// fprintf(stdout, "%s\n", version);
 		// fprintf(stdout, "%s\n", filepath);
 
 		// open file
+		//TO-DO show 404 not found error in HTTP response
 		fp = fopen(filepath, "r");
 		if(fp == NULL){
 			printf("cannot open\n");
@@ -227,10 +235,58 @@ int main(int argc, char* argv[]){
 		char content_length[100];
 		sprintf(content_length, "Content-Length: %lld\n", st.st_size);
 		// fprintf(stdout, "%lld\n", st.st_size);
-		printf("%s\n", content_length);
+		content_length[strlen(content_length)] = '\0';
 
-		
 
+		write(newsock, content_length, strlen(content_length));
+		// printf("%s\n", content_length);
+		// printf("%s\n", filepath);
+
+		// memset(content_length, 0, strlen(content_length));
+		char filetype[6] = {0};
+
+		// memset(filetype, 0, strlen(filetype));
+		// printf("%s\n", filetype);
+		char content_type[100];
+		int typeIndex = 0;
+		int type = 0;
+		int filepathLength = strlen(filepath);
+
+		for(int i = 1; i < filepathLength; i++){
+			if(filepath[i] == '.'){
+				type = 1;
+			}
+			if(type == 1){
+				// printf("hit");
+				filetype[typeIndex] = filepath[i];
+				typeIndex++;
+			}
+		}
+		filetype[strlen(filetype)] = '\0';
+		sprintf(content_type, "Content-Type: %s\n", filetype);
+
+		write(newsock, content_type, strlen(content_type));
+
+		char newline[1];
+		newline[0] = '\n';
+
+		write(newsock, newline, 1);
+
+		int bytes_read = read(fileno(fp), &output, MAX_LENGTH);
+		if(bytes_read < 0){
+			fprintf(stderr, "Unable to read from file. %s\r\n", strerror(errno));
+			exit(1);
+		}
+
+		void *p = output;
+	    while (bytes_read > 0) {
+	        int bytes_written = write(newsock, p, bytes_read);
+	        if (bytes_written <= 0) {
+	            // handle errors
+	        }
+	        bytes_read -= bytes_written;
+	        p += bytes_written;
+	    }
 	}
 
 
