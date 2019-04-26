@@ -93,17 +93,23 @@ int main(int argc, char* argv[]){
 
 		// still need to handle files with spaces in the filename
 		int versionStart = 0;
+		int offset = 0;
 		for(int i = 1; i < FILE_PATH_SIZE; i++){
-			if(input[i+3] == ' '){
-				versionStart = i+4;
+			if(input[i+3+offset] == '%'){
+				filepath[i+(offset/3)] = ' ';
+				offset += 3;
+			}
+
+			if(input[i+3+offset] == ' '){
+				versionStart = i+4+offset;
 				break;
 			}
 			else{
-				filepath[i] = input[i+3];
+				filepath[i+(offset/3)] = input[i+3+offset];
 			}
 		}
 
-		// printf("%s\n", filepath);
+		printf("%s\n", filepath);
 
 		char version[10];
 		for(int i = 0; i < 9; i++){
