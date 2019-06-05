@@ -17,7 +17,8 @@
 int port;
 int maxlen = 512;
 char* host = NULL;
-char* test = "TESTING TESTING";
+// char* test = "TESTING TESTING";
+char* filename = NULL;
 
 int main(int argc, char* argv[]){
 	char buf[512];
@@ -25,7 +26,14 @@ int main(int argc, char* argv[]){
 	struct sockaddr_in servername;
 	// struct hostent *server;
 
-	port = atoi(argv[1]);
+	if (argc != 4){
+		fprintf(stderr, "Invalid number of arguments. \n");
+		exit(1);
+	}
+
+	host = argv[1];
+	port = atoi(argv[2]);
+	filename = argv[3];
 
 	if(host == NULL){
 		host = "localhost";
@@ -42,7 +50,7 @@ int main(int argc, char* argv[]){
 	servername.sin_addr.s_addr = INADDR_ANY;
 
 	int n, len;
-	n = sendto(sock, (const char *)test, strlen(test), 0, (const struct sockaddr *) &servername, sizeof(servername));
+	n = sendto(sock, (const char *)filename, strlen(filename), 0, (const struct sockaddr *) &servername, sizeof(servername));
 	if (n < 0)
 		fprintf(stderr, "ERROR in sendto");	
 
@@ -55,7 +63,7 @@ int main(int argc, char* argv[]){
 	printf("%d\n", n);
 	printf("Echo from server: %s\n", buf);
 	printf("Expected: ");
-	printf("%s\n", test);
+	printf("%s\n", filename);
 	return 0;
 
 }
