@@ -37,6 +37,20 @@ char *hostaddrp;
 struct sockaddr_in serveraddr;
 struct sockaddr_in clientaddr;
 
+struct udpheader {
+	int sequence_number;
+	int ack_number; 
+	char ACK;
+	char SYN;
+	char FIN;
+	char pad;
+};
+
+struct packet {
+	struct udpheader packet_header;
+	char payload[512];
+};
+
 int make_socket(){
 	
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
@@ -76,13 +90,27 @@ int main(int argc, char* argv[]){
 
 	clientlen = sizeof(clientaddr);
 	int num = 0;
+
+	struct udpheader * rec = malloc(sizeof(struct udpheader));
+	struct packet * prec = malloc(sizeof(struct packet));
+
 	while(1){
 		//every iteration, zero out the buffer
 		char buf[MAX_LENGTH] = {0};
 
 		//will also read from client
-		newsock = recvfrom(sock, buf, MAX_LENGTH, 0,
+		// newsock = recvfrom(sock, buf, MAX_LENGTH, 0,
+  //                (struct sockaddr *) &clientaddr, &clientlen);
+
+		// newsock = recvfrom(sock, rec, sizeof(*rec), 0,
+  //                (struct sockaddr *) &clientaddr, &clientlen);
+
+		newsock = recvfrom(sock, prec, sizeof(*prec), 0,
                  (struct sockaddr *) &clientaddr, &clientlen);
+
+		// struct udpheader rec_header = prec->packet_header;
+		printf("recieved payload: %s\n", prec->payload);
+		printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
 
 		if(newsock > 0){
 			num++;
@@ -110,7 +138,7 @@ int main(int argc, char* argv[]){
 //        }
 
 		// fprintf(stdout, "server recieved datagram from %s (%s) \n", hostp->h_name, hostaddrp);
-		fprintf(stdout, "server recieved %d/%d bytes: %s \n", strlen(buf), newsock, buf );
+		// fprintf(stdout, "server recieved %d/%d bytes: %s \n", strlen(buf), newsock, buf );
 		// fprintf(stderr, "buff: %s\n",  buf);
 		//send back to the client
 		memset(&buf[0], 0, sizeof(buf));
