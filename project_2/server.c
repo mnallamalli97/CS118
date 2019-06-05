@@ -75,6 +75,7 @@ int main(int argc, char* argv[]){
 	sock = make_socket();
 
 	clientlen = sizeof(clientaddr);
+	int num = 0;
 	while(1){
 		//every iteration, zero out the buffer
 		char buf[MAX_LENGTH] = {0};
@@ -82,6 +83,11 @@ int main(int argc, char* argv[]){
 		//will also read from client
 		newsock = recvfrom(sock, buf, MAX_LENGTH, 0,
                  (struct sockaddr *) &clientaddr, &clientlen);
+
+		if(newsock > 0){
+			num++;
+			// printf("my new num value is: %d\n", num);
+		}
 
 		if(newsock < 0){
 			fprintf(stderr, "Socket recvfrom failed. %s\r\n", strerror(errno));
@@ -105,8 +111,11 @@ int main(int argc, char* argv[]){
 
 		// fprintf(stdout, "server recieved datagram from %s (%s) \n", hostp->h_name, hostaddrp);
 		fprintf(stdout, "server recieved %d/%d bytes: %s \n", strlen(buf), newsock, buf );
-		fprintf(stderr, "buff: %s\n",  buf);
-		//send back to the client 
+		// fprintf(stderr, "buff: %s\n",  buf);
+		//send back to the client
+		memset(&buf[0], 0, sizeof(buf));
+		snprintf(buf, sizeof(buf), "%d",num);
+		printf("%s\n", buf);
 		newsock = sendto(sock, (const char *) buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
 		if (newsock < 0)
 		{
