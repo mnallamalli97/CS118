@@ -29,8 +29,10 @@ struct udpheader {
 	char pad;
 };
 
-
-
+struct packet {
+	struct udpheader packet_header;
+	char payload[512];
+};
 
 int port;
 char* host = NULL;
@@ -110,15 +112,18 @@ int main(int argc, char* argv[]){
 	servername.sin_port = htons(port);
 	servername.sin_addr.s_addr = INADDR_ANY;
 
-	// int n, len;
+	int n, len;
 	// n = sendto(sock, (const char *)filename, strlen(filename), 0, (const struct sockaddr *) &servername, sizeof(servername));
 	// if (n < 0)
 	// 	fprintf(stderr, "ERROR in sendto");	
 
 	srand(time(0));
 	int seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
+	int ack = 0;
 
-	printf("%d\n", seqnum);
+	struct udpheader packet_header = {seqnum, ack, 0, 1, 0, 0}; // {seqnum, ack, ack_flag, SYN_flag, FIN_flag, padding}
+	// printf("%d\n", sizeof(packet_header));
+	// printf("%d\n", seqnum);
 
 	FILE* fp = fopen(filename, "r");
 	if (fp == NULL)
@@ -128,17 +133,30 @@ int main(int argc, char* argv[]){
 	}
 
 	char output[MAXLEN] = {0};
+	// int bytes_read = read(fileno(fp), &buf, 512);
+	// printf("%s\n", buf);
+	// struct packet p = {packet_header};
+	// strncpy(p.payload, buf, sizeof(buf));
+	// printf("%d\n", p.packet_header.sequence_number);
+	// printf("%s\n", p.payload);
+	// n = sendto(sock, (struct packet*)&p, (sizeof(p)), 0, (struct sockaddr *) &servername, sizeof(servername));
+
+	// n = sendto(sock, (struct udpheader*)&packet_header, (1024+sizeof(packet_header)), 0, (struct sockaddr *)
+ //         &servername, sizeof(servername));
 
 	int bytes_read;
 	while((bytes_read = read(fileno(fp), &buf, 512)) != EOF){
-		void *p = output;
+		struct packet p = {packet_header};
+		strncpy(p.payload, buf, sizeof(buf));
+		// printf(sizeof(p));
+		void *out = buf;
 		while(bytes_read > 0){
-			int bytes_written = sendto(sock, (const char *)buf, strlen(buf), 0, (const struct sockaddr *) &servername, sizeof(servername));
-			if(bytes_written <= 0){
+			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
+			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
 				exit(1);
 			}
-
+			int bytes_written = sizeof(buf);
 			int n, len;
 			n = recvfrom(sock, (char *) buf, MAXLEN, 0, &servername, &len);
 			if (n < 0)
@@ -147,18 +165,18 @@ int main(int argc, char* argv[]){
 			printf("Echo from server: %s\n", buf);
 
 			bytes_read -= bytes_written;
-			p += bytes_written;
+			out += bytes_written;
 		}
 	}
 
-	// n = recvfrom(sock, (char *) buf, MAXLEN, 0, &servername, &len);
-	// if (n < 0)
-	// 	fprintf(stderr, "ERROR in recvfrom");
-	// buf[n] = '\0';
+	n = recvfrom(sock, (char *) buf, MAXLEN, 0, &servername, &len);
+	if (n < 0)
+		fprintf(stderr, "ERROR in recvfrom");
+	buf[n] = '\0';
 
 	close(sock);
 	// printf("%d\n", n);
-	// printf("Echo from server: %s\n", buf);
+	printf("Echo from server: %s\n", buf);
 	// printf("Expected: ");
 	// printf("%s\n", filename);
 	return 0;
