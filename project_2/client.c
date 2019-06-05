@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <dirent.h>
+#include <time.h> 
 
 #define MAXLEN 524
 #define MAXSEQ 25600
@@ -21,10 +22,10 @@
 struct udpheader {
 	int sequence_number;
 	int ack_number; 
-	char ACK ;
-	char SYN ;
-	char FIN ;
-	char pad ;
+	char ACK;
+	char SYN;
+	char FIN;
+	char pad;
 };
 
 
@@ -75,7 +76,10 @@ int main(int argc, char* argv[]){
 	// if (n < 0)
 	// 	fprintf(stderr, "ERROR in sendto");	
 
+	srand(time(0));
+	int seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
 
+	printf("%d\n", seqnum);
 
 	FILE* fp = fopen(filename, "r");
 	if (fp == NULL)
