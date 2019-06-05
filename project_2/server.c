@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <sys/mman.h>
+#include <arpa/inet.h>
 
 #define MAX_LENGTH 8332
 #define FILE_PATH_SIZE 10000
@@ -88,23 +89,23 @@ int main(int argc, char* argv[]){
 		}
 
 		//now need to gethostbyaddr
-		hostp = gethostbyaddr((const char *) &clientaddr.sin_addr.s_addr, sizeof(clientaddr.sin_addr.s_addr), AF_INET);
+//        hostp = gethostbyaddr((const char *) &clientaddr.sin_addr.s_addr, sizeof(clientaddr.sin_addr.s_addr), AF_INET);
+//
+//        if(hostp < 0 || hostp == NULL){
+//            fprintf(stderr, "Error on gethostbyaddr. %s\r\n", strerror(errno));
+//            exit(1);
+//        }
+//
+//        hostaddrp = inet_ntoa(clientaddr.sin_addr);
+//        if (hostaddrp < 0 || hostaddrp == NULL)
+//        {
+//            fprintf(stderr, "Error on inet_ntoa \n");
+//            exit(1);
+//        }
 
-		if(hostp < 0 || hostp == NULL){
-			fprintf(stderr, "Error on gethostbyaddr. %s\r\n", strerror(errno));
-			exit(1);
-		}
-
-		hostaddrp = inet_ntoa(clientaddr.sin_addr);
-		if (hostaddrp < 0 || hostaddrp == NULL)
-		{
-			fprintf(stderr, "Error on inet_ntoa \n");
-			exit(1);
-		}
-
-		fprintf(stdout, "server recieved datagram from %s (%s) \n", hostp->h_name, hostaddrp);
+		// fprintf(stdout, "server recieved datagram from %s (%s) \n", hostp->h_name, hostaddrp);
 		fprintf(stdout, "server recieved %d/%d bytes: %s \n", strlen(buf), newsock, buf );
-
+		fprintf(stderr, "buff: %s\n",  buf);
 		//send back to the client 
 		newsock = sendto(sock, buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
 		if (newsock < 0)
