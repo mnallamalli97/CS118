@@ -18,6 +18,8 @@
 #define MAX_LENGTH 8332
 #define FILE_PATH_SIZE 10000
 
+//CITE: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpserver.c
+
 int port;
 FILE* fp = NULL;
 char *addr;
