@@ -107,12 +107,13 @@ int main(int argc, char* argv[]){
 		fprintf(stdout, "server recieved %d/%d bytes: %s \n", strlen(buf), newsock, buf );
 		fprintf(stderr, "buff: %s\n",  buf);
 		//send back to the client 
-		newsock = sendto(sock, buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
+		newsock = sendto(sock, (const char *) buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
 		if (newsock < 0)
 		{
 			fprintf(stderr, "Error in the sendto function\n" );
 			exit(1);
 		}
+		printf("%d\n", newsock);
 	}
 
 }

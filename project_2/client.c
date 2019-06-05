@@ -15,8 +15,9 @@
 #include <arpa/inet.h> 
 
 int port;
+int maxlen = 512;
 char* host = NULL;
-char* test = "TESTING TESTING\n";
+char* test = "TESTING TESTING";
 
 int main(int argc, char* argv[]){
 	char buf[512];
@@ -45,14 +46,16 @@ int main(int argc, char* argv[]){
 	if (n < 0)
 		fprintf(stderr, "ERROR in sendto");	
 
-	n = recvfrom(sock, (char *) buf, strlen(buf), 0, &servername, &servername);
+	n = recvfrom(sock, (char *) buf, maxlen, 0, &servername, &len);
 	if (n < 0)
 		fprintf(stderr, "ERROR in recvfrom");
 	buf[n] = '\0';
 
+	close(sock);
+	printf("%d\n", n);
 	printf("Echo from server: %s\n", buf);
 	printf("Expected: ");
-	printf(test);
+	printf("%s\n", test);
 	return 0;
 
 }
