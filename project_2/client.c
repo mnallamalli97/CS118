@@ -18,14 +18,14 @@
 #define MAXLEN 524
 #define MAXSEQ 25600
 
-// struct udpheader {
-// 	int sequence_number;
-// 	int ack_number; 
-// 	char ACK = 0;
-// 	char SYN = 0;
-// 	char FIN = 0;
-// 	char pad = 0;
-// };
+struct udpheader {
+	int sequence_number;
+	int ack_number; 
+	char ACK ;
+	char SYN ;
+	char FIN ;
+	char pad ;
+};
 
 
 
