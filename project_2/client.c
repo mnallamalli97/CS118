@@ -14,11 +14,30 @@
 #include <netdb.h>
 #include <arpa/inet.h> 
 
+#define MAXLEN 524
+
+struct udpheader {
+	int sequence_number;
+	int ack_number; 
+	char ACK = 0;
+	char SYN = 0;
+	char FIN = 0;
+	char pad = 0;
+};
+
+
+
+
 int port;
-int maxlen = 512;
 char* host = NULL;
 // char* test = "TESTING TESTING";
 char* filename = NULL;
+
+
+
+
+
+
 
 int main(int argc, char* argv[]){
 	char buf[512];
@@ -53,6 +72,27 @@ int main(int argc, char* argv[]){
 	n = sendto(sock, (const char *)filename, strlen(filename), 0, (const struct sockaddr *) &servername, sizeof(servername));
 	if (n < 0)
 		fprintf(stderr, "ERROR in sendto");	
+
+
+
+	FILE *fp = fopen(filename, "w+");
+	if (fp == NULL)
+	{
+		fprintf(stderr, "file not found. \n" );
+		exit(1);
+	}
+
+
+
+
+
+
+
+
+
+
+
+
 
 	n = recvfrom(sock, (char *) buf, maxlen, 0, &servername, &len);
 	if (n < 0)
