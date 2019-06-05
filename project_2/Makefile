@@ -1,5 +1,6 @@
 default: 
-	gcc -Wall -Wextra -o server server.c -w
+	gcc -Wall -Wextra -o server server.c
+	gcc -Wall -Wextra -o client client.c
 dist: 
 	tar -czvf project2_804769644_404729909.tar.gz server.c Makefile README
 clean: 
