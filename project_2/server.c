@@ -21,23 +21,36 @@
 int port;
 FILE* fp = NULL;
 char *addr;
+int sock;
+
+ssize_t newsock;
+char input[MAX_LENGTH] = {0};
+char output[MAX_LENGTH] = {0};
+int addrlen = 0;
+int clientlen = 0;
+char buf[MAX_LENGTH] = {0};
+struct hostent *hostp;
+char *hostaddrp; 
+struct sockaddr_in serveraddr;
+struct sockaddr_in clientaddr;
 
 int make_socket(){
-	int sock;
-	struct sockaddr_in name;
+	
 	sock = socket(AF_INET, SOCK_DGRAM, 0);
 	if(sock < 0){
 		fprintf(stderr, "Error making socket. %s\r\n", strerror(errno));
 		exit(1);
 	}
-	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0){
+
+	int option = 1;
+	if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const void*) &option, sizeof(int)) < 0){
     	fprintf(stderr, "setsockopt(SO_REUSEADDR) failed. %s\n", strerror(errno));
     	exit(1);
 	}
-	name.sin_family = AF_INET;
-	name.sin_port = htons(port);
-	name.sin_addr.s_addr = htonl(INADDR_ANY);
-	if(bind(sock, (struct sockaddr *) &name, sizeof(name))){
+	serveraddr.sin_family = AF_INET;
+	serveraddr.sin_port = htons(port);
+	serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
+	if(bind(sock, (struct sockaddr *) &serveraddr, sizeof(serveraddr))){
 		fprintf(stderr, "Unable to bind socket. %s\r\n", strerror(errno));
 		exit(1);
 	}
@@ -50,38 +63,19 @@ int make_socket(){
 
 
 int main(int argc, char* argv[]){
-
-	ssize_t newsock;
-	size = sizeof(clientname);
-	char input[MAX_LENGTH] = {0};
-	char output[MAX_LENGTH] = {0};
-	int addrlen = 0;
-	int clientlen = 0;
-	char buf[MAX_LENGTH] = {0};
-	struct hostent *hostp;
-	char *hostaddrp; 
-	struct sockaddr_in serveraddr;
-	struct sockaddr_in clientaddr;
-
 	
 	if (argc < 2){
 		fprintf(stderr, "invalid arguments. Must be port and file. %s\r\n", strerror(errno));
 	}
 
 	port = atoi(argv[1]);
-	int sock;
-	struct sockaddr_in clientname;
-	socklen_t size;
-
 	sock = make_socket();
-	if(listen (sock, 1) < 0){
-		fprintf(stderr, "Error while socket on server tried to listen. %s\r\n", strerror(errno));
-		exit(1);
-	}
-
 
 	clientlen = sizeof(clientaddr);
 	while(1){
+		//every iteration, zero out the buffer
+		char buf[MAX_LENGTH] = {0};
+
 		//will also read from client
 		newsock = recvfrom(sock, buf, MAX_LENGTH, 0,
                  (struct sockaddr *) &clientaddr, &clientlen);
@@ -103,11 +97,19 @@ int main(int argc, char* argv[]){
 		if (hostaddrp < 0 || hostaddrp == NULL)
 		{
 			fprintf(stderr, "Error on inet_ntoa \n");
-			exit(1;)
+			exit(1);
 		}
 
-		fprintf(stdout, "%s\n");
+		fprintf(stdout, "server recieved datagram from %s (%s) \n", hostp->h_name, hostaddrp);
+		fprintf(stdout, "server recieved %d/%d bytes: %s \n", strlen(buf), newsock, buf );
 
+		//send back to the client 
+		newsock = sendto(sock, buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
+		if (newsock < 0)
+		{
+			fprintf(stderr, "Error in the sendto function\n" );
+			exit(1);
+		}
 	}
 
 }

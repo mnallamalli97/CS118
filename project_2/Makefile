@@ -1,6 +1,6 @@
 default: 
-	gcc -Wall -Wextra -o webserver webserver.c -w
+	gcc -Wall -Wextra -o server server.c -w
 dist: 
-	tar -czvf 804769644.tar.gz webserver.c Makefile README report.pdf
+	tar -czvf project2_804769644_404729909.tar.gz server.c Makefile README
 clean: 
-	rm -f webserver 804769644.tar.gz
+	rm -f server project2_804769644_404729909.tar.gz
