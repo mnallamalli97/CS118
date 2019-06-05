@@ -15,6 +15,7 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <time.h> 
+#include <regex.h>
 
 #define MAXLEN 524
 #define MAXSEQ 25600
@@ -38,6 +39,15 @@ char* filename = NULL;
 
 
 
+int match(const char *string, const char *pattern)
+{
+    regex_t re;
+    if (regcomp(&re, pattern, REG_EXTENDED|REG_NOSUB) != 0) return 0;
+    int status = regexec(&re, string, 0, NULL, 0);
+    regfree(&re);
+    if (status != 0) return 0;
+    return 1;
+}
 
 
 
@@ -48,13 +58,42 @@ int main(int argc, char* argv[]){
 	struct sockaddr_in servername;
 	// struct hostent *server;
 
+
 	if (argc != 4){
 		fprintf(stderr, "Invalid number of arguments. \n");
 		exit(1);
 	}
 
-	host = argv[1];
-	port = atoi(argv[2]);
+
+
+	
+	const char* exp = "^[a-zA-Z0-9 ]*$";
+	//error checking for hostname
+	if (match(argv[1], exp))
+	{
+		host = argv[1];
+	}else{
+		printf("Invalid hostname\n");
+		exit(1);
+	}
+
+
+
+
+	//error checking port number
+	const char *s = argv[2];
+	char *eptr;
+	long value = strtol(s, &eptr, 10); /* 10 is the base */
+	/* now, value is 232, eptr points to "B" */
+	if (strlen(eptr) == 0)
+	{
+		port = atoi(argv[2]);
+	}else{
+		fprintf(stderr, "Invalid port number\n" );
+		exit(1);
+	}
+
+	//no error checking required
 	filename = argv[3];
 
 	if(host == NULL){
