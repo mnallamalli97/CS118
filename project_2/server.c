@@ -90,7 +90,6 @@ int main(int argc, char* argv[]){
 	sock = make_socket();
 
 	clientlen = sizeof(clientaddr);
-	int num = 0;
 
 	struct udpheader * rec = malloc(sizeof(struct udpheader));
 	struct packet * prec = malloc(sizeof(struct packet));
@@ -104,6 +103,9 @@ int main(int argc, char* argv[]){
 	char ack_flag = 1;
 	char syn_flag = 0;
 	char fin_flag = 0;
+
+	// make sure not to process duplicate packets
+	int last_seq_rec = -1;
 
 	while(1){
 		//every iteration, zero out the buffer
@@ -119,33 +121,93 @@ int main(int argc, char* argv[]){
 		newsock = recvfrom(sock, prec, sizeof(*prec), 0,
                  (struct sockaddr *) &clientaddr, &clientlen);
 
-		// set up udp header for response
-		if(prec->packet_header.SYN == 1){
-			seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
-			syn_flag = 1;
-			ack = prec->packet_header.sequence_number+1;
-			printf("received syn\n");
+		// set up udp header for response and process packet
+		if (prec->packet_header.sequence_number != last_seq_rec){
+			if(prec->packet_header.SYN == 1){
+				seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
+				syn_flag = 1;
+				ack = prec->packet_header.sequence_number+1;
+				printf("received syn\n");
+			}
+			else if(prec->packet_header.FIN == 1){
+				ack = prec->packet_header.sequence_number+1;
+				ack_flag = 1;
+				printf("received fin\n");
+			}
+			else{
+				// printf("payload success\n");
+				printf("size of payload: %d\n", strlen(prec->payload));
+				ack = prec->packet_header.sequence_number + strlen(prec->payload);
+			}
+			printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
+			last_seq_rec = prec->packet_header.sequence_number;
+
+			if(newsock < 0){
+				fprintf(stderr, "Socket recvfrom failed. %s\r\n", strerror(errno));
+				exit(1);
+			}
+			// int seconds = 0;
+			// clock_t before = clock();
+			// while(1){
+			// 	clock_t difference = clock() - before;
+			// 	seconds = difference / CLOCKS_PER_SEC;
+			// 	if(difference > 10){
+			// 		break;
+			// 	}
+			// }
+			printf("seqnumber sent: %d\n", seqnum);
+			printf("ack sent: %d\n", ack);
+			struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+			struct packet p = {packet_header};
+			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
+			if(packet_written <= 0){
+				fprintf(stderr, "unable to write to socket");
+				exit(1);
+			}
+			if(prec->packet_header.SYN == 1){
+				seqnum++;
+				syn_flag = 0;
+			}
+			if(prec->packet_header.FIN == 1){
+				printf("into fin sender\n");
+				int rec_ack = 0;
+				while(1){
+					ack = 0;
+					ack_flag = 0;
+					fin_flag = 1;
+					struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+					struct packet fin_pack = {fin_header};
+					int n = sendto(sock, (struct packet*) &fin_pack, sizeof(fin_pack), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
+					if(n < 0){
+						fprintf(stderr, "ERROR: unable to send FIN from server\n");
+					}
+					printf("fin sent\n");
+					struct packet *ack_pack = malloc(sizeof(struct packet));
+					rec_ack = recvfrom(sock, ack_pack, sizeof(*ack_pack), 0, (struct sockaddr *) &clientaddr, &clientlen);
+					if(rec_ack < 0){
+						fprintf(stderr, "ERROR: negative bytes in fin_ack receive\n");
+					}
+					// printf("%d\n", rec_ack);
+					if(rec_ack > 0){
+						printf("ack received\n");
+						break;
+					}
+				}
+				exit(1);
+			}
+
 		}
 		else{
-			// printf("payload success\n");
-			printf("size of payload: %d\n", strlen(prec->payload));
-			ack = prec->packet_header.sequence_number + strlen(prec->payload);
+			printf("received duplicate packet, did not process\n");
 		}
-
 		// struct udpheader rec_header = prec->packet_header;
 
 		// printf("recieved payload: %s\n", prec->payload);
-		printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
 
-		if(newsock > 0){
-			num++;
-			// printf("my new num value is: %d\n", num);
-		}
-
-		if(newsock < 0){
-			fprintf(stderr, "Socket recvfrom failed. %s\r\n", strerror(errno));
-			exit(1);
-		}
+		// if(newsock < 0){
+		// 	fprintf(stderr, "Socket recvfrom failed. %s\r\n", strerror(errno));
+		// 	exit(1);
+		// }
 
 		//now need to gethostbyaddr
 //        hostp = gethostbyaddr((const char *) &clientaddr.sin_addr.s_addr, sizeof(clientaddr.sin_addr.s_addr), AF_INET);
@@ -167,19 +229,29 @@ int main(int argc, char* argv[]){
 		// fprintf(stderr, "buff: %s\n",  buf);
 		//send back to the client
 		// int ack = seqnum + 
-		printf("seqnumber sent: %d\n", seqnum);
-		printf("ack sent: %d\n", ack);
-		struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
-		struct packet p = {packet_header};
-		int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
-		if(packet_written <= 0){
-			fprintf(stderr, "unable to write to socket");
-			exit(1);
-		}
-		if(prec->packet_header.SYN == 1){
-			seqnum++;
-			syn_flag = 0;
-		}
+		// int seconds = 0;
+		// clock_t before = clock();
+		// while(1){
+		// 	clock_t difference = clock() - before;
+		// 	seconds = difference / CLOCKS_PER_SEC;
+		// 	if(difference > 10){
+		// 		break;
+		// 	}
+		// 	sleep(1);
+		// }
+		// printf("seqnumber sent: %d\n", seqnum);
+		// printf("ack sent: %d\n", ack);
+		// struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+		// struct packet p = {packet_header};
+		// int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
+		// if(packet_written <= 0){
+		// 	fprintf(stderr, "unable to write to socket");
+		// 	exit(1);
+		// }
+		// if(prec->packet_header.SYN == 1){
+		// 	seqnum++;
+		// 	syn_flag = 0;
+		// }
 		// memset(&buf[0], 0, sizeof(buf));
 		// snprintf(buf, sizeof(buf), "%d",num);
 		// printf("%s\n", buf);

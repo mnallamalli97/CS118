@@ -39,6 +39,8 @@ char* host = NULL;
 // char* test = "TESTING TESTING";
 char* filename = NULL;
 
+//need to exit gracefully after 10 seconds
+int timeout = 0;
 
 
 int match(const char *string, const char *pattern)
@@ -208,7 +210,7 @@ int main(int argc, char* argv[]){
 
 	// // struct udpheader packet_header = {r_syn->packet_header.ack_number, r_syn.packet_header.sequence_number+1, 1, 0, 0, 0};
 
-	char rep_buf[512] = {0};
+	// char rep_buf[512] = {0};
 
 	int bytes_read;
 	while((bytes_read = read(fileno(fp), &buf, 512)) != EOF){
@@ -227,16 +229,40 @@ int main(int argc, char* argv[]){
 		printf("sequence number for packet 2 being sent: %d\n", p.packet_header.sequence_number);
 		// printf(sizeof(p));
 		void *out = buf;
+
 		while(bytes_read > 0){
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
 			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
 				exit(1);
 			}
+			// clock_t before = clock();
+			// int milliseconds = 0;
+			// n = 0;
+			// timer(&sock, &timeout);
 			int bytes_written = sizeof(buf);
 			// int n, len;
 			struct packet * r = malloc(sizeof(struct packet));
 			n = recvfrom(sock, r, sizeof(*r), 0, (struct sockaddr *) &servername, &len);
+			// clock_t difference = clock() - before;
+			// int milliseconds = difference * 1000 / CLOCKS_PER_SEC;
+			// printf("%d\n", milliseconds);
+			// seconds = milliseconds/1000;
+			// if(milliseconds % 500 == 0){
+			// 	printf("had to retransmit, 0.5 sec RTO\n");
+			// 	int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
+			// 	if(packet_written <= 0){
+			// 		fprintf(stderr, "unable to write to socket\n");
+			// 		exit(1);
+			// 	}
+			// }
+			// if(milliseconds >= 10000){
+			// 	printf("10 second timeout, close socket and exit\n");
+			// 	close(sock);
+			// 	exit(1);
+			// }
+			// printf("escaped in %d milliseconds\n", milliseconds);
+			// n = recvfrom(sock, r, sizeof(*r), 0, (struct sockaddr *) &servername, &len);
 			if (n < 0){
 				fprintf(stderr, "ERROR in recvfrom\n");
 				exit(1);
@@ -254,6 +280,62 @@ int main(int argc, char* argv[]){
 			out += bytes_written;
 		}
 	}
+
+	// Send UDP Packet with FIN flag
+	fin_flag = 1;
+	struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+	struct packet f = {fin_header};
+	n = sendto(sock, (struct packet*) &f, sizeof(f), 0, (struct sockaddr *) &servername, sizeof(servername));
+	if (n < 0){
+		fprintf(stderr, "ERROR: could not send fin packet");
+	}
+	printf("fin sent\n");
+
+
+	struct packet * r_ack = malloc(sizeof(struct packet));
+	n = recvfrom(sock, r_ack, sizeof(*r_ack), 0, (struct sockaddr *) &servername, &len);
+	
+	// expect to receive packet with ACK flag
+	if(r_ack->packet_header.ACK != 1){
+		fprintf(stderr, "ERROR: response from server to FIN did not have ACK.\n");
+	}
+	printf("ack received: %d\n", r_ack->packet_header.ack_number);
+	// increment sequence number
+	seqnum++;
+
+	time_t startTime = time(NULL);
+	printf("start time is: %ld\n", startTime);
+
+	// while(1){
+	// 	printf("difference is: %ld\n", time(NULL)-startTime);
+	// }
+	// while(time(NULL) - startTime < 2){
+	// while(1){
+	// 	printf("current time is: %ld\n", time(NULL));
+	// 	printf("difference is: %ld\n", time(NULL)-startTime);
+	struct packet * r_fin= malloc(sizeof(struct packet));
+	n = recvfrom(sock, r_fin, sizeof(*r_fin), 0, (struct sockaddr *) &servername, &len);
+	if(n > 0){
+		printf("received fin, value of n is: %d\n", n);
+	}
+	if(n > 0){
+		printf("checking fin packet from server\n");
+		if(r_fin->packet_header.FIN == 1){
+			printf("fin packet has fin flag up\n");
+			// fprintf(stderr, "ERROR: response from server to FIN did not have ACK.\n");
+			ack_flag = 1;
+			fin_flag = 0;
+			ack = r_fin->packet_header.sequence_number;
+			struct udpheader fin_ack_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+			struct packet ack = {fin_ack_header};
+			int fin_ack_pack = sendto(sock, (struct packet*) &ack, sizeof(ack), 0, (struct sockaddr *) &servername, sizeof(servername));
+			if (fin_ack_pack < 0){
+				fprintf(stderr, "ERROR: could not send ack packet for server fin");
+			}
+			printf("ack was sent\n");
+		}
+	}
+	// }
 
 	// n = recvfrom(sock, (char *) buf, MAXLEN, 0, &servername, &len);
 	// if (n < 0)
