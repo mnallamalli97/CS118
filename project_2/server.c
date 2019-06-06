@@ -77,9 +77,6 @@ int make_socket(){
 
 
 
-
-
-
 int main(int argc, char* argv[]){
 	
 	if (argc < 2){
@@ -107,6 +104,10 @@ int main(int argc, char* argv[]){
 	// make sure not to process duplicate packets
 	int last_seq_rec = -1;
 
+	int filecounter = 0;
+
+	FILE * fp = NULL;
+
 	while(1){
 		//every iteration, zero out the buffer
 		char buf[MAX_LENGTH] = {0};
@@ -128,16 +129,32 @@ int main(int argc, char* argv[]){
 				syn_flag = 1;
 				ack = prec->packet_header.sequence_number+1;
 				printf("received syn\n");
+				//open file to write to
+				filecounter++;
+				char file_path[512];
+				snprintf(file_path, sizeof(file_path), "./%d.file\0", filecounter);
+				fp = fopen(file_path, "w");
+				if(fp == NULL){
+					printf("ERROR: unable to create file\n");
+					exit(1);
+				}
+				printf("creating new file at %s\n", file_path);
 			}
 			else if(prec->packet_header.FIN == 1){
 				ack = prec->packet_header.sequence_number+1;
 				ack_flag = 1;
 				printf("received fin\n");
+
+				//close file written to
+				fclose(fp);
 			}
 			else{
 				// printf("payload success\n");
 				printf("size of payload: %d\n", strlen(prec->payload));
 				ack = prec->packet_header.sequence_number + strlen(prec->payload);
+
+				//write payload to the file
+				fputs(prec->payload, fp);
 			}
 			printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
 			last_seq_rec = prec->packet_header.sequence_number;
@@ -193,7 +210,7 @@ int main(int argc, char* argv[]){
 						break;
 					}
 				}
-				exit(1);
+				// exit(1);
 			}
 
 		}
