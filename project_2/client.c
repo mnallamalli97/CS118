@@ -36,6 +36,7 @@ struct udpheader {
 struct packet {
 	struct udpheader packet_header;
 	char payload[512];
+	// char *payload;
 };
 
 int port;
@@ -172,6 +173,12 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 
+	FILE * fown = fopen("test", "w");
+	if(fp == NULL){
+		printf("ERROR: unable to create file\n");
+		exit(1);
+	}
+
 	// char output[MAXLEN] = {0};
 	// int bytes_read = read(fileno(fp), &buf, 512);
 	// printf("%s\n", buf);
@@ -247,15 +254,22 @@ int main(int argc, char* argv[]){
 				break;
 			}
 			printf("bytes read: %d\n", bytes_read);
-			if(bytes_read < 512){
-				buf[bytes_read] = '\0';
-			}
+			// if(bytes_read < 512){
+			// 	buf[bytes_read] = '\0';
+			// }
 			// printf("payload contains: %s\n", buf);
 			printf("actual size of buffer (strlen): %lu\n", strlen(buf));
 
 			struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
 			struct packet p = {p_header};
-			strncpy(p.payload, buf, sizeof(buf));
+			// strncpy(p.payload, buf, sizeof(buf));
+			memset(p.payload, 0, sizeof(p.payload));
+			p.payload = malloc(sizeof(char)+bytes_read);
+			memcpy(p.payload, buf, bytes_read);
+			printf("The size of payload is: %lu\n", sizeof(p.payload));
+			// memset(buf, 0, sizeof(buf));
+			// fputs(p.payload, fown);
+			fwrite(p.payload, 1, bytes_read, fown);
 			// printf("%d\n", sizeof(buf));
 			printf("sequence number for packet 2 being sent: %d\n", p.packet_header.sequence_number);
 			// printf(sizeof(p));
@@ -364,6 +378,7 @@ int main(int argc, char* argv[]){
 		// }
 	}
 
+	fclose(fown);
 	// Send UDP Packet with FIN flag
 	fin_flag = 1;
 	struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};

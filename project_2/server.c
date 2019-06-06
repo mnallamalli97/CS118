@@ -129,6 +129,7 @@ int main(int argc, char* argv[]){
 		newsock = recvfrom(sock, prec, sizeof(*prec), 0,
                  (struct sockaddr *) &clientaddr, &clientlen);
 
+		printf("bytes read: %d\n", newsock);
 		// set up udp header for response and process packet
 		if (prec->packet_header.sequence_number != last_seq_rec){
 			if(prec->packet_header.SYN == 1){
@@ -157,7 +158,7 @@ int main(int argc, char* argv[]){
 			}
 			else{
 				// printf("payload success\n");
-				printf("size of payload: %d\n", strlen(prec->payload));
+				printf("size of payload: %d\n", sizeof(prec->payload));
 				// printf("payload contains: %s\n", prec->payload);
 				ack = prec->packet_header.sequence_number + strlen(prec->payload);
 				// int x_size = 512-strlen(prec->payload);
@@ -165,7 +166,8 @@ int main(int argc, char* argv[]){
 
 				// printf("size of concated payload: %d\n", sizeof(concat(prec->payload, x)));
 				//write payload to the file
-				fputs(prec->payload, fp);
+				// fputs(prec->payload, fp);
+				fwrite(prec->payload, 1, bytes_read, fp);
 				// fputs(concat(prec->payload, x), fp);
 			}
 			printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
