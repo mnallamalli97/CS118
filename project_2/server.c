@@ -139,7 +139,7 @@ int main(int argc, char* argv[]){
 				//open file to write to
 				filecounter++;
 				char file_path[512];
-				snprintf(file_path, sizeof(file_path), "./%d.jpg\0", filecounter);
+				snprintf(file_path, sizeof(file_path), "./%d.file\0", filecounter);
 				fp = fopen(file_path, "w");
 				if(fp == NULL){
 					printf("ERROR: unable to create file\n");
@@ -158,7 +158,7 @@ int main(int argc, char* argv[]){
 			else{
 				// printf("payload success\n");
 				printf("size of payload: %d\n", strlen(prec->payload));
-				printf("payload contains: %s\n", prec->payload);
+				// printf("payload contains: %s\n", prec->payload);
 				ack = prec->packet_header.sequence_number + strlen(prec->payload);
 				// int x_size = 512-strlen(prec->payload);
 				// char x[x_size] = {0};

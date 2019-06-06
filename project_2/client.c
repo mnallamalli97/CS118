@@ -19,6 +19,10 @@
 
 #define MAXLEN 524
 #define MAXSEQ 25600
+
+#define MINCWND 512
+#define MAXCWND 10240
+
 //fsefsd
 struct udpheader {
 	int sequence_number;
@@ -212,17 +216,24 @@ int main(int argc, char* argv[]){
 
 	// char rep_buf[512] = {0};
 
+	// initialize cwnd to mincwnd (512)
+	int cwnd = MINCWND;
+	int ssthresh = 5120;
+	int packets2send = cwnd / 512;
+	int packets_sent = 0;
+
 	int bytes_read;
 	while((bytes_read = read(fileno(fp), &buf, 512)) != EOF){
+		packets2send = cwnd / 512;
 		if(bytes_read == 0){
 			break;
 		}
-		printf("bytes read: %d\n", bytes_read);
-		if(bytes_read < 512){
-			buf[bytes_read] = '\0';
-		}
-		printf("payload contains: %s\n", buf);
-		printf("actual size of buffer (strlen): %lu\n", strlen(buf));
+		// printf("bytes read: %d\n", bytes_read);
+		// if(bytes_read < 512){
+		// 	buf[bytes_read] = '\0';
+		// }
+		// printf("payload contains: %s\n", buf);
+		// printf("actual size of buffer (strlen): %lu\n", strlen(buf));
 		// while(strlen(buf) == 0){
 		// 	printf("buffer had zero bytes, trying to reread");
 		// 	bytes_read = read(fileno(fp), &buf, 512);
@@ -231,63 +242,126 @@ int main(int argc, char* argv[]){
 		// 		buf[bytes_read] = '\0';
 		// 	}
 		// }
-		struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
-		struct packet p = {p_header};
-		strncpy(p.payload, buf, sizeof(buf));
-		// printf("%d\n", sizeof(buf));
-		printf("sequence number for packet 2 being sent: %d\n", p.packet_header.sequence_number);
-		// printf(sizeof(p));
-		void *out = buf;
+		while(packets2send != 0){
+			if(bytes_read == 0){
+				break;
+			}
+			printf("bytes read: %d\n", bytes_read);
+			if(bytes_read < 512){
+				buf[bytes_read] = '\0';
+			}
+			// printf("payload contains: %s\n", buf);
+			printf("actual size of buffer (strlen): %lu\n", strlen(buf));
 
-		while(bytes_read > 0){
+			struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+			struct packet p = {p_header};
+			strncpy(p.payload, buf, sizeof(buf));
+			// printf("%d\n", sizeof(buf));
+			printf("sequence number for packet 2 being sent: %d\n", p.packet_header.sequence_number);
+			// printf(sizeof(p));
+			// void *out = buf;
+
+			// while(bytes_read > 0){
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
 			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
 				exit(1);
 			}
-			// clock_t before = clock();
-			// int milliseconds = 0;
-			// n = 0;
-			// timer(&sock, &timeout);
-			int bytes_written = sizeof(buf);
-			// int n, len;
+			seqnum += strlen(buf);
+			packets2send--;
+			packets_sent++;
+			if(packets2send > 0){
+				bytes_read = read(fileno(fp), &buf, 512);
+			}
+		}
+
+
+		// struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+		// struct packet p = {p_header};
+		// strncpy(p.payload, buf, sizeof(buf));
+		// // printf("%d\n", sizeof(buf));
+		// printf("sequence number for packet 2 being sent: %d\n", p.packet_header.sequence_number);
+		// printf(sizeof(p));
+		// void *out = buf;
+
+		// while(bytes_read > 0){
+		while(packets_sent != 0){
 			struct packet * r = malloc(sizeof(struct packet));
 			n = recvfrom(sock, r, sizeof(*r), 0, (struct sockaddr *) &servername, &len);
-			// clock_t difference = clock() - before;
-			// int milliseconds = difference * 1000 / CLOCKS_PER_SEC;
-			// printf("%d\n", milliseconds);
-			// seconds = milliseconds/1000;
-			// if(milliseconds % 500 == 0){
-			// 	printf("had to retransmit, 0.5 sec RTO\n");
-			// 	int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
-			// 	if(packet_written <= 0){
-			// 		fprintf(stderr, "unable to write to socket\n");
-			// 		exit(1);
-			// 	}
-			// }
-			// if(milliseconds >= 10000){
-			// 	printf("10 second timeout, close socket and exit\n");
-			// 	close(sock);
-			// 	exit(1);
-			// }
-			// printf("escaped in %d milliseconds\n", milliseconds);
-			// n = recvfrom(sock, r, sizeof(*r), 0, (struct sockaddr *) &servername, &len);
 			if (n < 0){
 				fprintf(stderr, "ERROR in recvfrom\n");
 				exit(1);
 			}
-
+			packets_sent--;
+			packets2send++;
 			seqnum = r->packet_header.ack_number;
 			ack = 0;
 			ack_flag = 0;
 			printf("sequence number for packet 2 received: %d\n", seqnum);
 			printf("ack number for packet 2 received: %d\n", r->packet_header.ack_number);
-			// buf[n] = '\0';
-			// printf("Echo from server: %s\n", buf);
-
-			bytes_read -= bytes_written;
-			out += bytes_written;
 		}
+		if(packets_sent == 0){
+			if(cwnd < ssthresh){
+				cwnd += 512;
+			}
+			else{
+				cwnd += (512 * 512)/cwnd;
+			}
+			if(cwnd > MAXCWND){
+				cwnd = MAXCWND;
+			}
+		}
+		else{
+			cwnd = MINCWND;
+		}
+		// int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
+		// if(packet_written <= 0){
+		// 	fprintf(stderr, "unable to write to socket");
+		// 	exit(1);
+		// }
+		// clock_t before = clock();
+		// int milliseconds = 0;
+		// n = 0;
+		// timer(&sock, &timeout);
+		// int bytes_written = sizeof(buf);
+		// int n, len;
+		// struct packet * r = malloc(sizeof(struct packet));
+		// n = recvfrom(sock, r, sizeof(*r), 0, (struct sockaddr *) &servername, &len);
+		// clock_t difference = clock() - before;
+		// int milliseconds = difference * 1000 / CLOCKS_PER_SEC;
+		// printf("%d\n", milliseconds);
+		// seconds = milliseconds/1000;
+		// if(milliseconds % 500 == 0){
+		// 	printf("had to retransmit, 0.5 sec RTO\n");
+		// 	int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
+		// 	if(packet_written <= 0){
+		// 		fprintf(stderr, "unable to write to socket\n");
+		// 		exit(1);
+		// 	}
+		// }
+		// if(milliseconds >= 10000){
+		// 	printf("10 second timeout, close socket and exit\n");
+		// 	close(sock);
+		// 	exit(1);
+		// }
+		// printf("escaped in %d milliseconds\n", milliseconds);
+		// n = recvfrom(sock, r, sizeof(*r), 0, (struct sockaddr *) &servername, &len);
+		// if (n < 0){
+		// 	fprintf(stderr, "ERROR in recvfrom\n");
+		// 	exit(1);
+		// }
+
+		// seqnum = r->packet_header.ack_number;
+		// ack = 0;
+		// ack_flag = 0;
+		// printf("sequence number for packet 2 received: %d\n", seqnum);
+		// printf("ack number for packet 2 received: %d\n", r->packet_header.ack_number);
+		// buf[n] = '\0';
+		// printf("Echo from server: %s\n", buf);
+
+		// bytes_read -= bytes_written;
+		// out += bytes_written;
+		// }
 	}
 
 	// Send UDP Packet with FIN flag
