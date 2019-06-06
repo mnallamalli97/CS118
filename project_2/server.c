@@ -75,7 +75,14 @@ int make_socket(){
 	return sock;
 }
 
-
+// char* concat(const char *s1, const char *s2)
+// {
+//     char *result = malloc(strlen(s1) + strlen(s2) + 1); // +1 for the null-terminator
+//     // in real code you would check for errors in malloc here
+//     strcpy(result, s1);
+//     strcat(result, s2);
+//     return result;
+// }
 
 int main(int argc, char* argv[]){
 	
@@ -132,7 +139,7 @@ int main(int argc, char* argv[]){
 				//open file to write to
 				filecounter++;
 				char file_path[512];
-				snprintf(file_path, sizeof(file_path), "./%d.file\0", filecounter);
+				snprintf(file_path, sizeof(file_path), "./%d.jpg\0", filecounter);
 				fp = fopen(file_path, "w");
 				if(fp == NULL){
 					printf("ERROR: unable to create file\n");
@@ -151,10 +158,15 @@ int main(int argc, char* argv[]){
 			else{
 				// printf("payload success\n");
 				printf("size of payload: %d\n", strlen(prec->payload));
+				printf("payload contains: %s\n", prec->payload);
 				ack = prec->packet_header.sequence_number + strlen(prec->payload);
+				// int x_size = 512-strlen(prec->payload);
+				// char x[x_size] = {0};
 
+				// printf("size of concated payload: %d\n", sizeof(concat(prec->payload, x)));
 				//write payload to the file
 				fputs(prec->payload, fp);
+				// fputs(concat(prec->payload, x), fp);
 			}
 			printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
 			last_seq_rec = prec->packet_header.sequence_number;

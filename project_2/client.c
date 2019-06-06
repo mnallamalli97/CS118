@@ -221,7 +221,16 @@ int main(int argc, char* argv[]){
 		if(bytes_read < 512){
 			buf[bytes_read] = '\0';
 		}
-		// printf("%s\n", buf);
+		printf("payload contains: %s\n", buf);
+		printf("actual size of buffer (strlen): %lu\n", strlen(buf));
+		// while(strlen(buf) == 0){
+		// 	printf("buffer had zero bytes, trying to reread");
+		// 	bytes_read = read(fileno(fp), &buf, 512);
+		// 	printf("bytes read: %d\n", bytes_read);
+		// 	if(bytes_read < 512){
+		// 		buf[bytes_read] = '\0';
+		// 	}
+		// }
 		struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
 		struct packet p = {p_header};
 		strncpy(p.payload, buf, sizeof(buf));
