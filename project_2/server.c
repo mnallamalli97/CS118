@@ -15,10 +15,11 @@
 #include <dirent.h>
 #include <sys/mman.h>
 #include <arpa/inet.h>
+#include <time.h> 
 
 #define MAX_LENGTH 8332
 #define FILE_PATH_SIZE 10000
-
+#define MAXSEQ 25600
 //CITE: https://www.cs.cmu.edu/afs/cs/academic/class/15213-f99/www/class26/udpserver.c
 
 int port;
@@ -94,6 +95,16 @@ int main(int argc, char* argv[]){
 	struct udpheader * rec = malloc(sizeof(struct udpheader));
 	struct packet * prec = malloc(sizeof(struct packet));
 
+	//generate random sequence number
+	srand(time(0));
+
+	//default settings for udpheader
+	int seqnum = 0;
+	int ack = 0;
+	char ack_flag = 1;
+	char syn_flag = 0;
+	char fin_flag = 0;
+
 	while(1){
 		//every iteration, zero out the buffer
 		char buf[MAX_LENGTH] = {0};
@@ -108,8 +119,22 @@ int main(int argc, char* argv[]){
 		newsock = recvfrom(sock, prec, sizeof(*prec), 0,
                  (struct sockaddr *) &clientaddr, &clientlen);
 
+		// set up udp header for response
+		if(prec->packet_header.SYN == 1){
+			seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
+			syn_flag = 1;
+			ack = prec->packet_header.sequence_number+1;
+			printf("received syn\n");
+		}
+		else{
+			// printf("payload success\n");
+			printf("size of payload: %d\n", strlen(prec->payload));
+			ack = prec->packet_header.sequence_number + strlen(prec->payload);
+		}
+
 		// struct udpheader rec_header = prec->packet_header;
-		printf("recieved payload: %s\n", prec->payload);
+
+		// printf("recieved payload: %s\n", prec->payload);
 		printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
 
 		if(newsock > 0){
@@ -141,16 +166,30 @@ int main(int argc, char* argv[]){
 		// fprintf(stdout, "server recieved %d/%d bytes: %s \n", strlen(buf), newsock, buf );
 		// fprintf(stderr, "buff: %s\n",  buf);
 		//send back to the client
-		memset(&buf[0], 0, sizeof(buf));
-		snprintf(buf, sizeof(buf), "%d",num);
-		printf("%s\n", buf);
-		newsock = sendto(sock, (const char *) buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
-		if (newsock < 0)
-		{
-			fprintf(stderr, "Error in the sendto function\n" );
+		// int ack = seqnum + 
+		printf("seqnumber sent: %d\n", seqnum);
+		printf("ack sent: %d\n", ack);
+		struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+		struct packet p = {packet_header};
+		int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
+		if(packet_written <= 0){
+			fprintf(stderr, "unable to write to socket");
 			exit(1);
 		}
-		printf("%d\n", newsock);
+		if(prec->packet_header.SYN == 1){
+			seqnum++;
+			syn_flag = 0;
+		}
+		// memset(&buf[0], 0, sizeof(buf));
+		// snprintf(buf, sizeof(buf), "%d",num);
+		// printf("%s\n", buf);
+		// newsock = sendto(sock, (const char *) buf, strlen(buf), 0, (struct sockaddr *) &clientaddr, clientlen);
+		// if (newsock < 0)
+		// {
+		// 	fprintf(stderr, "Error in the sendto function\n" );
+		// 	exit(1);
+		// }
+		// printf("%d\n", newsock);
 	}
 
 }
