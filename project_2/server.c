@@ -46,7 +46,7 @@ struct udpheader {
 	char FIN;
 	char pad;
 	short size;
-};
+} __attribute__((__packed__));;
 
 struct packet {
 	struct udpheader packet_header;
