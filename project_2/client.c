@@ -25,12 +25,13 @@
 
 //fsefsd
 struct udpheader {
-	int sequence_number;
+	short sequence_number;
 	int ack_number; 
 	char ACK;
 	char SYN;
 	char FIN;
 	char pad;
+	short size;
 };
 
 struct packet {
@@ -126,11 +127,11 @@ int main(int argc, char* argv[]){
 
 	// Initiate threeway handshake
 	srand(time(0));
-	int seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
+	short seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
 	int ack = 0;
 	printf("sequence number for packet 1 being sent: %d\n", seqnum);
 
-	struct udpheader packet_header = {seqnum, ack, 0, 1, 0, 0}; // {seqnum, ack, ack_flag, SYN_flag, FIN_flag, padding}
+	struct udpheader packet_header = {seqnum, ack, 0, 1, 0, 0, 0}; // {seqnum, ack, ack_flag, SYN_flag, FIN_flag, padding, payload size}
 	// printf("%d\n", sizeof(packet_header));
 	// printf("%d\n", seqnum);
 	struct packet p_syn = {packet_header};
@@ -260,11 +261,11 @@ int main(int argc, char* argv[]){
 			// printf("payload contains: %s\n", buf);
 			printf("actual size of buffer (strlen): %lu\n", strlen(buf));
 
-			struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+			struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, bytes_read};
 			struct packet p = {p_header};
 			// strncpy(p.payload, buf, sizeof(buf));
 			memset(p.payload, 0, sizeof(p.payload));
-			p.payload = malloc(sizeof(char)+bytes_read);
+			// p.payload = malloc(sizeof(char)+bytes_read);
 			memcpy(p.payload, buf, bytes_read);
 			printf("The size of payload is: %lu\n", sizeof(p.payload));
 			// memset(buf, 0, sizeof(buf));
@@ -381,7 +382,7 @@ int main(int argc, char* argv[]){
 	fclose(fown);
 	// Send UDP Packet with FIN flag
 	fin_flag = 1;
-	struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+	struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
 	struct packet f = {fin_header};
 	n = sendto(sock, (struct packet*) &f, sizeof(f), 0, (struct sockaddr *) &servername, sizeof(servername));
 	if (n < 0){
@@ -424,7 +425,7 @@ int main(int argc, char* argv[]){
 			ack_flag = 1;
 			fin_flag = 0;
 			ack = r_fin->packet_header.sequence_number;
-			struct udpheader fin_ack_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+			struct udpheader fin_ack_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
 			struct packet ack = {fin_ack_header};
 			int fin_ack_pack = sendto(sock, (struct packet*) &ack, sizeof(ack), 0, (struct sockaddr *) &servername, sizeof(servername));
 			if (fin_ack_pack < 0){

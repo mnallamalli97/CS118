@@ -39,12 +39,13 @@ struct sockaddr_in serveraddr;
 struct sockaddr_in clientaddr;
 
 struct udpheader {
-	int sequence_number;
+	short sequence_number;
 	int ack_number; 
 	char ACK;
 	char SYN;
 	char FIN;
 	char pad;
+	short size;
 };
 
 struct packet {
@@ -102,7 +103,7 @@ int main(int argc, char* argv[]){
 	srand(time(0));
 
 	//default settings for udpheader
-	int seqnum = 0;
+	short seqnum = 0;
 	int ack = 0;
 	char ack_flag = 1;
 	char syn_flag = 0;
@@ -167,7 +168,7 @@ int main(int argc, char* argv[]){
 				// printf("size of concated payload: %d\n", sizeof(concat(prec->payload, x)));
 				//write payload to the file
 				// fputs(prec->payload, fp);
-				fwrite(prec->payload, 1, bytes_read, fp);
+				fwrite(prec->payload, 1, prec->packet_header.size, fp);
 				// fputs(concat(prec->payload, x), fp);
 			}
 			printf("received sequence_number: %d\n", prec->packet_header.sequence_number);
@@ -188,7 +189,7 @@ int main(int argc, char* argv[]){
 			// }
 			printf("seqnumber sent: %d\n", seqnum);
 			printf("ack sent: %d\n", ack);
-			struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+			struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
 			struct packet p = {packet_header};
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
 			if(packet_written <= 0){
@@ -206,7 +207,7 @@ int main(int argc, char* argv[]){
 					ack = 0;
 					ack_flag = 0;
 					fin_flag = 1;
-					struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
+					struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
 					struct packet fin_pack = {fin_header};
 					int n = sendto(sock, (struct packet*) &fin_pack, sizeof(fin_pack), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
 					if(n < 0){
