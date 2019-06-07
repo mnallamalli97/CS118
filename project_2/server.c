@@ -137,6 +137,7 @@ int main(int argc, char* argv[]){
 			if(prec->packet_header.SYN == 1){
 				seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
 				syn_flag = 1;
+				ack_flag = 1;
 				ack = prec->packet_header.sequence_number+1;
 				printf("received syn\n");
 				//open file to write to
@@ -193,15 +194,17 @@ int main(int argc, char* argv[]){
 			printf("ack sent: %d\n", ack);
 			struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
 			struct packet p = {packet_header};
-			if(sleepfirst){
-				sleep(1);
-				sleepfirst = 0;
-			}
+			// if(sleepfirst){
+			// 	sleep(1);
+			// 	sleepfirst = 0;
+			// }
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
 			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
 				exit(1);
 			}
+
+			// put syn flag down
 			if(prec->packet_header.SYN == 1){
 				seqnum++;
 				syn_flag = 0;

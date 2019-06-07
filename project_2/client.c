@@ -16,6 +16,8 @@
 #include <dirent.h>
 #include <time.h> 
 #include <regex.h>
+#include <sys/stat.h>
+#include <math.h>
 
 #define MAXLEN 524
 #define MAXSEQ 25600
@@ -177,7 +179,6 @@ int main(int argc, char* argv[]){
 			fprintf(stderr, "ERROR: select() returned -1");
 		}
 		else if (retval){
-			printf("hit");
 			n = recvfrom(sock, r_syn, sizeof(*r_syn), 0, (struct sockaddr *) &servername, &len);
 			if (n < 0){
 				fprintf(stderr, "ERROR: recvfrom");
@@ -230,11 +231,14 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 
-	// FILE * fown = fopen("test", "w");
-	// if(fp == NULL){
-	// 	printf("ERROR: unable to create file\n");
-	// 	exit(1);
-	// }
+	// get size of file
+
+	struct stat finfo;
+    fstat(fileno(fp), &finfo);
+    int file_size = finfo.st_size;
+    printf("file size: %d\n", file_size);
+    int exp_num_packets = (file_size + 512 - 1) / 512;
+    printf("expected number of packets: %d\n", exp_num_packets);
 
 	// char output[MAXLEN] = {0};
 	// int bytes_read = read(fileno(fp), &buf, 512);
