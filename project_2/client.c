@@ -51,6 +51,7 @@ char* filename = NULL;
 //need to exit gracefully after 10 seconds
 int timeout = 0;
 
+int abort_counter = 0;
 // srand(time(0));
 // short seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
 // int ack = 0;
@@ -199,33 +200,27 @@ int main(int argc, char* argv[]){
 		retval = select(sock + 1, &rfds, NULL, NULL, &tv);
 
 		if (retval == -1){
-			fprintf(stderr, "ERROR: select() returned -1");
+			fprintf(stderr, "ERROR: select() returned -1\n");
 		}
 		else if (retval){
 			n = recvfrom(sock, r_syn, sizeof(*r_syn), 0, (struct sockaddr *) &servername, &len);
 			if (n < 0){
-				fprintf(stderr, "ERROR: recvfrom");
+				fprintf(stderr, "ERROR: recvfrom\n");
 			}
 			syn_acked = 1;
 			un_acked[0] = NULL;
 		}
 		else{
 			printf("retransmitting SYN\n");
+			abort_counter++;
+			if(abort_counter == 20){
+				close(sock);
+				printf("HOUSTON WE HAVE A PROBLEM, ABORT ABORT!\n");
+				exit(1);
+			}
 		}
 	}
-
-
-	// send_SYN(sock, p_syn, servername);
-	// un_acked[0] = p_syn;
-
-	// // printf("Size of unack array: %lu\n", sizeof(un_acked));
-
-	// // receive syn and ack flags in packet from server
-	// struct packet * r_syn = malloc(sizeof(struct packet));
-	// n = recvfrom(sock, r_syn, sizeof(*r_syn), 0, (struct sockaddr *) &servername, &len);
-	// if (n < 0){
-	// 	fprintf(stderr, "ERROR: recvfrom");
-	// }
+	abort_counter = 0;
 
 	// verify ack number from packet from server is seqnum + 1
 	if(r_syn->packet_header.ack_number != seqnum+1){
@@ -410,30 +405,34 @@ int main(int argc, char* argv[]){
 				ack_flag = 0;
 				printf("sequence number for packet received: %d\n", seqnum);
 				printf("ack number for packet received: %d\n", r->packet_header.ack_number);
+				abort_counter = 0;
 			}
 			else{
 				printf("timed out, need to retransmit\n");
+				abort_counter++;
 				// to resend all packets that are unacked after last acked
-				// packets_resend = packets_awaiting_ack;
-				// packets_resent -= num_retransmitted_per_cycle;
 				int un_ackchecker;
 				int count_unacks = 0;
 				for(un_ackchecker = 0; un_ackchecker < 10; un_ackchecker++){
 					if(un_acked[un_ackchecker] != NULL){
 						count_unacks++;
 					}
-					// else{
-					// 	break;
-					// }
 				}
 				packets_resend = count_unacks;
 				retransmit = 1;
 				break;
 			}
 		}
-		
+
 		if(packets_delivered >= exp_num_packets){
 			break;
+		}
+
+		// 10 second timeout, abort connection
+		if(abort_counter == 20){
+			close(sock);
+			printf("HOUSTON WE HAVE A PROBLEM, ABORT ABORT!\n");
+			exit(1);
 		}
 
 		// should be able to only do this if packets_resend > 0

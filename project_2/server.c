@@ -195,13 +195,26 @@ int main(int argc, char* argv[]){
 			printf("ack sent: %d\n", ack);
 			struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
 			struct packet p = {packet_header};
-			if(sleepcounter == 3){
-				sleep(2);
-				// sleepcounter = 0;
-			}
-			else{
-				sleepcounter++;
-			}
+
+			// PURELY FOR TESTING, MAKE SURE TO REMOVE //
+
+			// if(sleepcounter == 30){
+			// 	sleep(12);
+			// 	// sleepcounter = 0;
+			// 	sleepcounter++;
+			// }
+			// else if(sleepcounter % 5 == 0){
+			// 	printf("sleepcounter: %d\n", sleepcounter);
+			// 	sleepcounter++;
+			// 	sleep(2);
+			// }
+			// else{
+			// 	sleepcounter++;
+			// 	printf("incrementing sleepcounter to: %d\n", sleepcounter);
+			// }
+
+			// REMOVE ABOVE PART - PURELY FOR TESTING
+
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
 			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
