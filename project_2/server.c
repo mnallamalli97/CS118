@@ -161,7 +161,8 @@ int main(int argc, char* argv[]){
 				// printf("payload success\n");
 				printf("size of payload: %d\n", sizeof(prec->payload));
 				// printf("payload contains: %s\n", prec->payload);
-				ack = prec->packet_header.sequence_number + strlen(prec->payload);
+				// ack = prec->packet_header.sequence_number + sizeof(prec->payload);
+				ack = prec->packet_header.sequence_number + prec->packet_header.size;
 				// int x_size = 512-strlen(prec->payload);
 				// char x[x_size] = {0};
 
@@ -230,7 +231,7 @@ int main(int argc, char* argv[]){
 
 		}
 		else{
-			printf("received duplicate packet, did not process\n");
+			printf("received duplicate packet, did not process. Sequence number: %d\n", last_seq_rec);
 		}
 		// struct udpheader rec_header = prec->packet_header;
 

@@ -249,7 +249,7 @@ int main(int argc, char* argv[]){
 		// while(strlen(buf) == 0){
 		// 	printf("buffer had zero bytes, trying to reread");
 		// 	bytes_read = read(fileno(fp), &buf, 512);
-		// 	printf("bytes read: %d\n", bytes_read);
+			// printf("bytes read: %d\n", bytes_read);
 		// 	if(bytes_read < 512){
 		// 		buf[bytes_read] = '\0';
 		// 	}
@@ -261,12 +261,8 @@ int main(int argc, char* argv[]){
 				break;
 			}
 			printf("start of inner while loop bytes read: %d\n", bytes_read);
-			// if(bytes_read < 512){
-			// 	buf[bytes_read] = '\0';
-			// }
-			// printf("payload contains: %s\n", buf);
-			// printf("actual size of buffer (strlen): %lu\n", strlen(buf));
 
+			printf("bytes read: %d\n", bytes_read);
 			struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, bytes_read};
 			struct packet p = {p_header};
 			// strncpy(p.payload, buf, sizeof(buf));
@@ -278,7 +274,7 @@ int main(int argc, char* argv[]){
 			// fputs(p.payload, fown);
 			fwrite(p.payload, 1, bytes_read, fown);
 			// printf("%d\n", sizeof(buf));
-			printf("sequence number for packet 2 being sent: %d\n", p.packet_header.sequence_number);
+			printf("sequence number for packet being sent: %d\n", p.packet_header.sequence_number);
 			// printf(sizeof(p));
 			// void *out = buf;
 
@@ -290,6 +286,9 @@ int main(int argc, char* argv[]){
 				exit(1);
 			}
 			seqnum += bytes_read;
+			if(seqnum > MAXSEQ){
+				seqnum = 0;
+			}
 			packets2send--;
 			packets_sent++;
 			if(packets2send > 0){
