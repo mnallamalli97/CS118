@@ -132,7 +132,11 @@ int main(int argc, char* argv[]){
 	printf("sequence number for packet 1 being sent: %d\n", seqnum);
 
 	struct udpheader packet_header = {seqnum, ack, 0, 1, 0, 0, 0}; // {seqnum, ack, ack_flag, SYN_flag, FIN_flag, padding, payload size}
-	// printf("%d\n", sizeof(packet_header));
+	
+	printf("size of seqnum: %lu, size of ack: %lu, size of ack flag: %lu, size of syn flag: %lu, size of fin flag: %lu. size of pad: %lu. size of psize: %lu\n", sizeof(packet_header.sequence_number), sizeof(packet_header.ack_number), sizeof(packet_header.ACK), sizeof(packet_header.SYN), sizeof(packet_header.FIN), sizeof(packet_header.pad), sizeof(packet_header.size));
+	printf("%lu\n", sizeof(packet_header));
+
+
 	// printf("%d\n", seqnum);
 	struct packet p_syn = {packet_header};
 	n = sendto(sock, (struct packet*) &p_syn, sizeof(p_syn), 0, (struct sockaddr *) &servername, sizeof(servername));
@@ -236,7 +240,7 @@ int main(int argc, char* argv[]){
 		if(bytes_read == 0){
 			break;
 		}
-		// printf("bytes read: %d\n", bytes_read);
+		printf("outer while loop bytes read: %d\n", bytes_read);
 		// if(bytes_read < 512){
 		// 	buf[bytes_read] = '\0';
 		// }
@@ -250,16 +254,18 @@ int main(int argc, char* argv[]){
 		// 		buf[bytes_read] = '\0';
 		// 	}
 		// }
+		printf("packets 2 send at start of outer loop: %d\n", packets2send);
 		while(packets2send != 0){
 			if(bytes_read == 0){
+				printf("number of packets left to send: %d\n", packets2send);
 				break;
 			}
-			printf("bytes read: %d\n", bytes_read);
+			printf("start of inner while loop bytes read: %d\n", bytes_read);
 			// if(bytes_read < 512){
 			// 	buf[bytes_read] = '\0';
 			// }
 			// printf("payload contains: %s\n", buf);
-			printf("actual size of buffer (strlen): %lu\n", strlen(buf));
+			// printf("actual size of buffer (strlen): %lu\n", strlen(buf));
 
 			struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, bytes_read};
 			struct packet p = {p_header};
@@ -267,7 +273,7 @@ int main(int argc, char* argv[]){
 			memset(p.payload, 0, sizeof(p.payload));
 			// p.payload = malloc(sizeof(char)+bytes_read);
 			memcpy(p.payload, buf, bytes_read);
-			printf("The size of payload is: %lu\n", sizeof(p.payload));
+			// printf("The size of payload is: %lu\n", sizeof(p.payload));
 			// memset(buf, 0, sizeof(buf));
 			// fputs(p.payload, fown);
 			fwrite(p.payload, 1, bytes_read, fown);
@@ -276,20 +282,22 @@ int main(int argc, char* argv[]){
 			// printf(sizeof(p));
 			// void *out = buf;
 
+			printf("size of packet header sent: %lu\n", sizeof(p_header));
 			// while(bytes_read > 0){
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
 			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
 				exit(1);
 			}
-			seqnum += strlen(buf);
+			seqnum += bytes_read;
 			packets2send--;
 			packets_sent++;
 			if(packets2send > 0){
 				bytes_read = read(fileno(fp), &buf, 512);
+				printf("inner while loop bytes read: %d\n", bytes_read);
 			}
 		}
-
+		printf("number of acks to receive: %d\n", packets_sent);
 
 		// struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
 		// struct packet p = {p_header};
@@ -314,6 +322,7 @@ int main(int argc, char* argv[]){
 			ack_flag = 0;
 			printf("sequence number for packet 2 received: %d\n", seqnum);
 			printf("ack number for packet 2 received: %d\n", r->packet_header.ack_number);
+			printf("waiting for # of packets: %d\n", packets_sent);
 		}
 		if(packets_sent == 0){
 			if(cwnd < ssthresh){
@@ -440,7 +449,9 @@ int main(int argc, char* argv[]){
 	// if (n < 0)
 	// 	fprintf(stderr, "ERROR in recvfrom");
 	// buf[n] = '\0';
-
+	printf("size of short: %lu\n", sizeof(short));
+	printf("size of int: %lu\n", sizeof(int));
+	printf("size of char: %li\n", sizeof(char));
 	close(sock);
 	// printf("%d\n", n);
 	// printf("Echo from server: %s\n", buf);
