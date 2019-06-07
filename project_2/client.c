@@ -48,6 +48,9 @@ char* filename = NULL;
 //need to exit gracefully after 10 seconds
 int timeout = 0;
 
+// srand(time(0));
+// short seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
+// int ack = 0;
 
 int match(const char *string, const char *pattern)
 {
@@ -59,6 +62,13 @@ int match(const char *string, const char *pattern)
     return 1;
 }
 
+int send_SYN(int socket, struct packet p_syn, struct sockaddr_in servername){
+	int n = sendto(socket, (struct packet*) &p_syn, sizeof(p_syn), 0, (struct sockaddr *) &servername, sizeof(servername));
+	if(n <= 0){
+		fprintf(stderr, "ERROR: unable to send initiation packet");
+	}
+	return n;
+}
 
 
 
@@ -125,6 +135,9 @@ int main(int argc, char* argv[]){
 	// if (n < 0)
 	// 	fprintf(stderr, "ERROR in sendto");	
 
+	// Make array of packets to hold un acked packets that are sent. Remove when they are acked.
+	struct packet* un_acked[10];
+
 	// Initiate threeway handshake
 	srand(time(0));
 	short seqnum = rand() % (MAXSEQ + 1 - 0) + 0;
@@ -139,17 +152,56 @@ int main(int argc, char* argv[]){
 
 	// printf("%d\n", seqnum);
 	struct packet p_syn = {packet_header};
-	n = sendto(sock, (struct packet*) &p_syn, sizeof(p_syn), 0, (struct sockaddr *) &servername, sizeof(servername));
-	if(n <= 0){
-		fprintf(stderr, "ERROR: unable to send initiation packet");
+	// n = sendto(sock, (struct packet*) &p_syn, sizeof(p_syn), 0, (struct sockaddr *) &servername, sizeof(servername));
+	// if(n <= 0){
+	// 	fprintf(stderr, "ERROR: unable to send initiation packet");
+	// }
+	int syn_acked = 0;
+	struct timeval tv;
+	int retval;
+	fd_set rfds;
+
+	struct packet * r_syn = malloc(sizeof(struct packet));
+
+	while(!syn_acked){
+		send_SYN(sock, p_syn, servername);
+		un_acked[0] = &p_syn;
+
+		FD_ZERO(&rfds);
+		FD_SET(sock, &rfds);
+		tv.tv_sec = 0;
+		tv.tv_usec = 500000;
+		retval = select(sock + 1, &rfds, NULL, NULL, &tv);
+
+		if (retval == -1){
+			fprintf(stderr, "ERROR: select() returned -1");
+		}
+		else if (retval){
+			printf("hit");
+			n = recvfrom(sock, r_syn, sizeof(*r_syn), 0, (struct sockaddr *) &servername, &len);
+			if (n < 0){
+				fprintf(stderr, "ERROR: recvfrom");
+			}
+			syn_acked = 1;
+			un_acked[0] = NULL;
+		}
+		else{
+			printf("retransmitting SYN\n");
+		}
 	}
 
-	// receive syn and ack flags in packet from server
-	struct packet * r_syn = malloc(sizeof(struct packet));
-	n = recvfrom(sock, r_syn, sizeof(*r_syn), 0, (struct sockaddr *) &servername, &len);
-	if (n < 0){
-		fprintf(stderr, "ERROR: recvfrom");
-	}
+
+	// send_SYN(sock, p_syn, servername);
+	// un_acked[0] = p_syn;
+
+	// // printf("Size of unack array: %lu\n", sizeof(un_acked));
+
+	// // receive syn and ack flags in packet from server
+	// struct packet * r_syn = malloc(sizeof(struct packet));
+	// n = recvfrom(sock, r_syn, sizeof(*r_syn), 0, (struct sockaddr *) &servername, &len);
+	// if (n < 0){
+	// 	fprintf(stderr, "ERROR: recvfrom");
+	// }
 
 	// verify ack number from packet from server is seqnum + 1
 	if(r_syn->packet_header.ack_number != seqnum+1){
@@ -178,11 +230,11 @@ int main(int argc, char* argv[]){
 		exit(1);
 	}
 
-	FILE * fown = fopen("test", "w");
-	if(fp == NULL){
-		printf("ERROR: unable to create file\n");
-		exit(1);
-	}
+	// FILE * fown = fopen("test", "w");
+	// if(fp == NULL){
+	// 	printf("ERROR: unable to create file\n");
+	// 	exit(1);
+	// }
 
 	// char output[MAXLEN] = {0};
 	// int bytes_read = read(fileno(fp), &buf, 512);
@@ -235,12 +287,14 @@ int main(int argc, char* argv[]){
 	int packets_sent = 0;
 
 	int bytes_read;
+	printf("entering sendto loop");
+
 	while((bytes_read = read(fileno(fp), &buf, 512)) != EOF){
 		packets2send = cwnd / 512;
 		if(bytes_read == 0){
 			break;
 		}
-		printf("outer while loop bytes read: %d\n", bytes_read);
+		// printf("outer while loop bytes read: %d\n", bytes_read);
 		// if(bytes_read < 512){
 		// 	buf[bytes_read] = '\0';
 		// }
@@ -256,24 +310,20 @@ int main(int argc, char* argv[]){
 		// }
 		printf("packets 2 send at start of outer loop: %d\n", packets2send);
 		while(packets2send != 0){
+			// TO-DO: create array of packets that holds packets that aren't acked. Whenever a packet is sent, add it to the array 
 			if(bytes_read == 0){
 				printf("number of packets left to send: %d\n", packets2send);
 				break;
 			}
-			printf("start of inner while loop bytes read: %d\n", bytes_read);
-
+			// printf("start of inner while loop bytes read: %d\n", bytes_read);
 			printf("bytes read: %d\n", bytes_read);
 			struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, bytes_read};
 			struct packet p = {p_header};
-			// strncpy(p.payload, buf, sizeof(buf));
 			memset(p.payload, 0, sizeof(p.payload));
 			// p.payload = malloc(sizeof(char)+bytes_read);
 			memcpy(p.payload, buf, bytes_read);
 			// printf("The size of payload is: %lu\n", sizeof(p.payload));
 			// memset(buf, 0, sizeof(buf));
-			// fputs(p.payload, fown);
-			fwrite(p.payload, 1, bytes_read, fown);
-			// printf("%d\n", sizeof(buf));
 			printf("sequence number for packet being sent: %d\n", p.packet_header.sequence_number);
 			// printf(sizeof(p));
 			// void *out = buf;
@@ -293,10 +343,10 @@ int main(int argc, char* argv[]){
 			packets_sent++;
 			if(packets2send > 0){
 				bytes_read = read(fileno(fp), &buf, 512);
-				printf("inner while loop bytes read: %d\n", bytes_read);
+				// printf("inner while loop bytes read: %d\n", bytes_read);
 			}
 		}
-		printf("number of acks to receive: %d\n", packets_sent);
+		// printf("number of acks to receive: %d\n", packets_sent);
 
 		// struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0};
 		// struct packet p = {p_header};
@@ -307,7 +357,10 @@ int main(int argc, char* argv[]){
 		// void *out = buf;
 
 		// while(bytes_read > 0){
+
+
 		while(packets_sent != 0){
+			// implement select inside, break when timeout and retransmit (once packet is acked remove )
 			struct packet * r = malloc(sizeof(struct packet));
 			n = recvfrom(sock, r, sizeof(*r), 0, (struct sockaddr *) &servername, &len);
 			if (n < 0){
@@ -319,10 +372,13 @@ int main(int argc, char* argv[]){
 			seqnum = r->packet_header.ack_number;
 			ack = 0;
 			ack_flag = 0;
-			printf("sequence number for packet 2 received: %d\n", seqnum);
-			printf("ack number for packet 2 received: %d\n", r->packet_header.ack_number);
-			printf("waiting for # of packets: %d\n", packets_sent);
+			printf("sequence number for packet received: %d\n", seqnum);
+			printf("ack number for packet received: %d\n", r->packet_header.ack_number);
+			// printf("waiting for # of packets: %d\n", packets_sent);
 		}
+
+		//
+
 		if(packets_sent == 0){
 			if(cwnd < ssthresh){
 				cwnd += 512;
@@ -387,7 +443,7 @@ int main(int argc, char* argv[]){
 		// }
 	}
 
-	fclose(fown);
+	// fclose(fown);
 	// Send UDP Packet with FIN flag
 	fin_flag = 1;
 	struct udpheader fin_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
@@ -448,14 +504,7 @@ int main(int argc, char* argv[]){
 	// if (n < 0)
 	// 	fprintf(stderr, "ERROR in recvfrom");
 	// buf[n] = '\0';
-	printf("size of short: %lu\n", sizeof(short));
-	printf("size of int: %lu\n", sizeof(int));
-	printf("size of char: %li\n", sizeof(char));
 	close(sock);
-	// printf("%d\n", n);
-	// printf("Echo from server: %s\n", buf);
-	// printf("Expected: ");
-	// printf("%s\n", filename);
 	return 0;
 
 }
