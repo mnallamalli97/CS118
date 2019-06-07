@@ -115,7 +115,8 @@ int main(int argc, char* argv[]){
 	int filecounter = 0;
 
 	FILE * fp = NULL;
-	int sleepfirst = 1;
+
+	int sleepcounter = 0;
 
 	while(1){
 		//every iteration, zero out the buffer
@@ -194,10 +195,13 @@ int main(int argc, char* argv[]){
 			printf("ack sent: %d\n", ack);
 			struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
 			struct packet p = {packet_header};
-			// if(sleepfirst){
-			// 	sleep(1);
-			// 	sleepfirst = 0;
-			// }
+			if(sleepcounter == 3){
+				sleep(2);
+				// sleepcounter = 0;
+			}
+			else{
+				sleepcounter++;
+			}
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
 			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
