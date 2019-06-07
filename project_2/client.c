@@ -357,6 +357,12 @@ int main(int argc, char* argv[]){
 			}
 			printf("sequence number for packet being sent: %d\n", p.packet_header.sequence_number);
 
+			fprintf(stdout, "SEND %d %d %d %d %s\n", p.packet_header.sequence_number, 0, cwnd, ssthresh, "ACK");
+
+//SEND hSeqNumi hAckNumi hcwndi hssthreshi [ACK] [SYN] [FIN] [DUP]
+
+
+
 			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &servername, sizeof(servername));
 			if(packet_written <= 0){
 				fprintf(stderr, "unable to write to socket");
@@ -406,6 +412,11 @@ int main(int argc, char* argv[]){
 				printf("sequence number for packet received: %d\n", seqnum);
 				printf("ack number for packet received: %d\n", r->packet_header.ack_number);
 				abort_counter = 0;
+
+				fprintf(stdout, "RECV %d %d %d %d %s \n", seqnum, r->packet_header.ack_number, cwnd, ssthresh, "ACK");
+
+			
+
 			}
 			else{
 				printf("timed out, need to retransmit\n");
