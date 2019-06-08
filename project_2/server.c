@@ -85,8 +85,13 @@ int make_socket(){
 //     return result;
 // }
 
+int handle_sigint(int sig){
+	printf("Caught SIGQUIT signal %d\n", sig); 
+	exit(0);
+}
+
 int main(int argc, char* argv[]){
-	
+	signal(SIGQUIT, handle_sigint);
 	if (argc < 2){
 		fprintf(stderr, "invalid arguments. Must be port and file. %s\r\n", strerror(errno));
 	}
