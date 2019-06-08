@@ -85,6 +85,8 @@ int send_SYN(int socket, struct packet p_syn, struct sockaddr_in servername){
 	return n;
 }
 
+// int clear_buffer(int socket, struct sockaddr_in, )
+
 
 int shift_left(struct packet* p[]){
 	int counter = 0;
@@ -130,7 +132,7 @@ int main(int argc, char* argv[]){
 	{
 		host = argv[1];
 	}else{
-		printf("Invalid hostname\n");
+		fprintf(stderr, "Invalid hostname\n");
 		exit(1);
 	}
 
@@ -260,20 +262,8 @@ int main(int argc, char* argv[]){
     int file_size = finfo.st_size;
     // printf("file size: %d\n", file_size);
     int exp_num_packets = (file_size + 512 - 1) / 512;
-    printf("expected number of packets: %d\n", exp_num_packets);
+    // printf("expected number of packets: %d\n", exp_num_packets);
     int packets_delivered = 0;
-
-	// char output[MAXLEN] = {0};
-	// int bytes_read = read(fileno(fp), &buf, 512);
-	// printf("%s\n", buf);
-	// struct packet p = {packet_header};
-	// strncpy(p.payload, buf, sizeof(buf));
-	// printf("%d\n", p.packet_header.sequence_number);
-	// printf("%s\n", p.payload);
-	// n = sendto(sock, (struct packet*)&p, (sizeof(p)), 0, (struct sockaddr *) &servername, sizeof(servername));
-
-	// n = sendto(sock, (struct udpheader*)&packet_header, (1024+sizeof(packet_header)), 0, (struct sockaddr *)
- //         &servername, sizeof(servername));
 
 	// third part of handshake
 	seqnum = r_syn->packet_header.ack_number;
@@ -456,47 +446,87 @@ int main(int argc, char* argv[]){
 				if (n < 0){
 					fprintf(stderr, "ERROR: recvfrom");
 				}
+				if(!retransmit){
+					struct packet exp = *un_acked[packets2send];
+					int expected_ack = exp.packet_header.sequence_number + exp.packet_header.size;
+					// printf("packets2send val: %d\n", packets2send);
+					if(expected_ack > MAXSEQ){
+						expected_ack = 0;
+					}
+					if(r->packet_header.ack_number != expected_ack){
+						// printf("received ack number: %d, expected: %d\n", r->packet_header.ack_number, exp.packet_header.sequence_number + exp.packet_header.size);
+						// printf("need to retransmit, not expected ack_number. \n");
+						abort_counter++;
+						// to resend all packets that are unacked after last acked
+						int un_ackchecker;
+						int count_unacks = 0;
+						for(un_ackchecker = 0; un_ackchecker < 20; un_ackchecker++){
+							if(un_acked[un_ackchecker] != NULL){
+								count_unacks++;
+							}
+						}
+						packets_resend = count_unacks;
+						retransmit = 1;
+						// clear_buffer(sock, servername, len);
+						// break;
+					}
+					packets_delivered++;
+					packets_awaiting_ack--;
+					// if acked, removed from unacked array
+					un_acked[packets2send] = NULL;
+					// if its a retransmitted packet, decrement packets to resend
+					if(packets_resend > 0){
+						packets_resend--;
+					}
+					packets2send++;
+					seqnum = r->packet_header.ack_number;
+					ack = 0;
+					ack_flag = 0;
+					abort_counter = 0;
 
-				struct packet exp = *un_acked[packets2send];
-				int expected_ack = exp.packet_header.sequence_number + exp.packet_header.size;
-				// printf("packets2send val: %d\n", packets2send);
+					fprintf(stdout, "RECV %d %d %d %d %s \n", seqnum, r->packet_header.ack_number, cwnd, ssthresh, "ACK");
+				}
+				// struct packet exp = *un_acked[packets2send];
+				// int expected_ack = exp.packet_header.sequence_number + exp.packet_header.size;
+				// // printf("packets2send val: %d\n", packets2send);
 				// if(expected_ack > MAXSEQ){
 				// 	expected_ack = 0;
 				// }
-				if(r->packet_header.ack_number != expected_ack){
-					printf("received ack number: %d, expected: %d\n", r->packet_header.ack_number, exp.packet_header.sequence_number + exp.packet_header.size);
-					printf("need to retransmit, not expected ack_number. \n");
-					abort_counter++;
-					// to resend all packets that are unacked after last acked
-					int un_ackchecker;
-					int count_unacks = 0;
-					for(un_ackchecker = 0; un_ackchecker < 20; un_ackchecker++){
-						if(un_acked[un_ackchecker] != NULL){
-							count_unacks++;
-						}
-					}
-					packets_resend = count_unacks;
-					retransmit = 1;
-					break;
-				}
-				packets_delivered++;
-				packets_awaiting_ack--;
-				// if acked, removed from unacked array
-				un_acked[packets2send] = NULL;
-				// if its a retransmitted packet, decrement packets to resend
-				if(packets_resend > 0){
-					packets_resend--;
-				}
-				packets2send++;
-				seqnum = r->packet_header.ack_number;
-				ack = 0;
-				ack_flag = 0;
-				abort_counter = 0;
+				// if(r->packet_header.ack_number != expected_ack){
+				// 	// printf("received ack number: %d, expected: %d\n", r->packet_header.ack_number, exp.packet_header.sequence_number + exp.packet_header.size);
+				// 	// printf("need to retransmit, not expected ack_number. \n");
+				// 	abort_counter++;
+				// 	// to resend all packets that are unacked after last acked
+				// 	int un_ackchecker;
+				// 	int count_unacks = 0;
+				// 	for(un_ackchecker = 0; un_ackchecker < 20; un_ackchecker++){
+				// 		if(un_acked[un_ackchecker] != NULL){
+				// 			count_unacks++;
+				// 		}
+				// 	}
+				// 	packets_resend = count_unacks;
+				// 	retransmit = 1;
+				// 	// clear_buffer(sock, servername, len);
+				// 	break;
+				// }
+				// packets_delivered++;
+				// packets_awaiting_ack--;
+				// // if acked, removed from unacked array
+				// un_acked[packets2send] = NULL;
+				// // if its a retransmitted packet, decrement packets to resend
+				// if(packets_resend > 0){
+				// 	packets_resend--;
+				// }
+				// packets2send++;
+				// seqnum = r->packet_header.ack_number;
+				// ack = 0;
+				// ack_flag = 0;
+				// abort_counter = 0;
 
-				fprintf(stdout, "RECV %d %d %d %d %s \n", seqnum, r->packet_header.ack_number, cwnd, ssthresh, "ACK");
+				// fprintf(stdout, "RECV %d %d %d %d %s \n", seqnum, r->packet_header.ack_number, cwnd, ssthresh, "ACK");
 			}
 			else{
-				printf("timed out, need to retransmit\n");
+				// printf("timed out, need to retransmit\n");
 				abort_counter++;
 				// to resend all packets that are unacked after last acked
 				int un_ackchecker;
@@ -523,7 +553,7 @@ int main(int argc, char* argv[]){
 
 		// should be able to only do this if packets_resend > 0
 		if(un_acked[0] == NULL && packets_resend > 0){
-			printf("shifting left");
+			// printf("shifting left");
 			shift_left(&un_acked);
 		}
 
@@ -546,7 +576,7 @@ int main(int argc, char* argv[]){
 
 		retransmit = 0;
 		packets_awaiting_ack = 0;
-		printf("packets delivered: %d\n", packets_delivered);
+		// printf("packets delivered: %d\n", packets_delivered);
 		// num_retransmitted_per_cycle = 0;
 	}
 	// free the allocated memory

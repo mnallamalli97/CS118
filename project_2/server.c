@@ -190,16 +190,16 @@ int main(int argc, char* argv[]){
 					fp = NULL;
 				}
 				else{
-					// if(prec->packet_header.sequence_number != last_ack_sent){
-					// 	ack = last_ack_sent;
-					// }
-					// else{
-					// 	ack = prec->packet_header.sequence_number + prec->packet_header.size;
-					// 	if(ack > 25600){
-					// 		ack = 0;
-					// 	}
-					// }
-					ack = prec->packet_header.sequence_number + prec->packet_header.size;
+					if(prec->packet_header.sequence_number != last_ack_sent){
+						ack = last_ack_sent;
+					}
+					else{
+						ack = prec->packet_header.sequence_number + prec->packet_header.size;
+						if(ack > 25600){
+							ack = 0;
+						}
+					}
+					// ack = prec->packet_header.sequence_number + prec->packet_header.size;
 					// printf("payload success\n");
 					// printf("size of payload: %d\n", sizeof(prec->payload));
 					// printf("payload contains: %s\n", prec->payload);
