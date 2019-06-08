@@ -120,6 +120,7 @@ int main(int argc, char* argv[]){
 	int sleepcounter = 0;
 	int dup_ack = 0;
 	int connection = 0;
+	int last_ack_sent = 0;
 
 	while(1){
 		//every iteration, zero out the buffer
@@ -189,6 +190,16 @@ int main(int argc, char* argv[]){
 					fp = NULL;
 				}
 				else{
+					// if(prec->packet_header.sequence_number != last_ack_sent){
+					// 	ack = last_ack_sent;
+					// }
+					// else{
+					// 	ack = prec->packet_header.sequence_number + prec->packet_header.size;
+					// 	if(ack > 25600){
+					// 		ack = 0;
+					// 	}
+					// }
+					ack = prec->packet_header.sequence_number + prec->packet_header.size;
 					// printf("payload success\n");
 					// printf("size of payload: %d\n", sizeof(prec->payload));
 					// printf("payload contains: %s\n", prec->payload);
@@ -196,7 +207,7 @@ int main(int argc, char* argv[]){
 					// if(ack = prec->packet_header.sequence_number){
 					// 	ack = prec->packet_header.sequence_number + prec->packet_header.size;	
 					// }
-					ack = prec->packet_header.sequence_number + prec->packet_header.size;
+					// ack = prec->packet_header.sequence_number + prec->packet_header.size;
 					// int x_size = 512-strlen(prec->payload);
 					// char x[x_size] = {0};
 
@@ -251,7 +262,7 @@ int main(int argc, char* argv[]){
 					fprintf(stderr, "unable to write to socket");
 					exit(1);
 				}
-
+				last_ack_sent = ack;
 				// put syn flag down
 				if(prec->packet_header.SYN == 1){
 					seqnum++;
