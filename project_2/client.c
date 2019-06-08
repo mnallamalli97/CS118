@@ -604,7 +604,7 @@ int main(int argc, char* argv[]){
 	// TO-DO make sure to free all mallocs
 	free(r);
 
-	sleep(12);
+	// sleep(12);
 	// fclose(fown);
 	// Send UDP Packet with FIN flag
 	fin_flag = 1;
