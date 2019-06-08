@@ -96,7 +96,7 @@ int main(int argc, char* argv[]){
 
 	clientlen = sizeof(clientaddr);
 
-	struct udpheader * rec = malloc(sizeof(struct udpheader));
+	// struct udpheader * rec = malloc(sizeof(struct udpheader));
 	struct packet * prec = malloc(sizeof(struct packet));
 
 	//generate random sequence number
@@ -166,6 +166,9 @@ int main(int argc, char* argv[]){
 				printf("size of payload: %d\n", sizeof(prec->payload));
 				// printf("payload contains: %s\n", prec->payload);
 				// ack = prec->packet_header.sequence_number + sizeof(prec->payload);
+				// if(ack = prec->packet_header.sequence_number){
+				// 	ack = prec->packet_header.sequence_number + prec->packet_header.size;	
+				// }
 				ack = prec->packet_header.sequence_number + prec->packet_header.size;
 				// int x_size = 512-strlen(prec->payload);
 				// char x[x_size] = {0};

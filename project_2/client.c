@@ -313,10 +313,13 @@ int main(int argc, char* argv[]){
 	// int packets_resent = 0;
 	
 	int bytes_read;
-	printf("entering sendto loop");
+	printf("entering sendto loop\n");
 	int retransmit = 0;
 	// int num_retransmitted_per_cycle = 0;
 	struct packet * r = malloc(sizeof(struct packet));
+
+
+	struct packet p1, p2, p3, p4, p5, p6, p7, p8, p9, p10;
 
 	// int tm_c = 0;
 
@@ -336,6 +339,7 @@ int main(int argc, char* argv[]){
 			if(packets_resend > 0 && un_acked[packets_awaiting_ack] != NULL){
 				// cwnd resets to 1, all packets to resend are backlogged
 				// p = **(un_acked+packets_awaiting_ack);
+				// struct packet p;
 				p = *un_acked[packets_awaiting_ack];
 				// p.packet_header.sequence_number = seqnum;
 				seqnum = p.packet_header.sequence_number;
@@ -345,6 +349,8 @@ int main(int argc, char* argv[]){
 				// num_retransmitted_per_cycle++;
 			}
 			else{
+
+
 				bytes_read = read(fileno(fp), &buf, 512);
 				struct udpheader p_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, bytes_read};
 				p.packet_header = p_header;
@@ -354,14 +360,61 @@ int main(int argc, char* argv[]){
 				int count_checker;
 				for(count_checker = 0; count_checker < 10; count_checker++){
 					if(un_acked[count_checker] == NULL){
-						un_acked[count_checker] = &p;
+						// un_acked[count_checker] = &p;
 						break;
 					}
 				}
+				switch(packets_awaiting_ack+1)
+				{
+					case 1:
+						printf("saved to p1 at slot: %d\n", count_checker);
+						p1 = p;
+						un_acked[count_checker] = &p1;
+						break;
+					case 2:
+						printf("saved to p2 at slot: %d\n", count_checker);
+						p2 = p;
+						un_acked[count_checker] = &p2;
+						break;
+					case 3:
+						p3 = p;
+						un_acked[count_checker] = &p3;
+						break;
+					case 4:
+						p4 = p;
+						un_acked[count_checker] = &p4;
+						break;
+					case 5:
+						p5 = p;
+						un_acked[count_checker] = &p5;
+						break;
+					case 6:
+						p6 = p;
+						un_acked[count_checker] = &p6;
+						break;
+					case 7:
+						p7 = p;
+						un_acked[count_checker] = &p7;
+						break;
+					case 8:
+						p8 = p;
+						un_acked[count_checker] = &p8;
+						break;
+					case 9:
+						p9 = p;
+						un_acked[count_checker] = &p9;
+						break;
+					case 10:
+						p10 = p;
+						un_acked[count_checker] = &p10;
+						break;
+
+				}
+				// struct packet cpy = p;
 				printf("placed in slot: %d\n", count_checker);
-				
+
 			}
-			printf("sequence number for packet being sent: %d\n", p.packet_header.sequence_number);
+			// printf("sequence number for packet being sent: %d\n", p.packet_header.sequence_number);
 
 			fprintf(stdout, "SEND %d %d %d %d\n", p.packet_header.sequence_number, 0, cwnd, ssthresh);
 
@@ -373,6 +426,7 @@ int main(int argc, char* argv[]){
 					printf("sequence number: %d\n ", exp.packet_header.sequence_number);
 					printf("packet size: %d\n ", exp.packet_header.size);
 					printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
+					printf("found in slot %d\n", n);
 				}	
 			}
 
@@ -409,18 +463,18 @@ int main(int argc, char* argv[]){
 					fprintf(stderr, "ERROR: recvfrom");
 				}
 
-				printf("printing contents of un_acked\n");
-				for(n = 0; n < 10; n++){
-					if(un_acked[n] != NULL){
-						struct packet exp = *un_acked[n];
-						printf("sequence number: %d\n ", exp.packet_header.sequence_number);
-						printf("packet size: %d\n ", exp.packet_header.size);
-						printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
-					}	
-				}
+				// printf("printing contents of un_acked\n");
+				// for(n = 0; n < 10; n++){
+				// 	if(un_acked[n] != NULL){
+				// 		struct packet exp = *un_acked[n];
+				// 		printf("sequence number: %d\n ", exp.packet_header.sequence_number);
+				// 		printf("packet size: %d\n ", exp.packet_header.size);
+				// 		printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
+				// 	}	
+				// }
 
 				struct packet exp = *un_acked[packets2send];
-				printf("packets2send val: %d\n", packets2send);
+				// printf("packets2send val: %d\n", packets2send);
 				if(r->packet_header.ack_number != exp.packet_header.sequence_number + exp.packet_header.size){
 					printf("received ack number: %d, expected: %d\n", r->packet_header.ack_number, exp.packet_header.sequence_number + exp.packet_header.size);
 					printf("need to retransmit, not expected ack_number. \n");
@@ -453,14 +507,12 @@ int main(int argc, char* argv[]){
 				seqnum = r->packet_header.ack_number;
 				ack = 0;
 				ack_flag = 0;
-				printf("sequence number set to: %d\n", seqnum);
-				printf("ack number for packet received: %d\n", r->packet_header.ack_number);
+				// printf("sequence number set to: %d\n", seqnum);
+				// printf("ack number for packet received: %d\n", r->packet_header.ack_number);
 				abort_counter = 0;
 
 				fprintf(stdout, "RECV %d %d %d %d %s \n", seqnum, r->packet_header.ack_number, cwnd, ssthresh, "ACK");
-
-			
-
+				
 			}
 			else{
 				printf("timed out, need to retransmit\n");
@@ -479,10 +531,11 @@ int main(int argc, char* argv[]){
 			}
 		}
 
+		printf("hit\n");
 		if(packets_delivered >= exp_num_packets){
 			break;
 		}
-
+		printf("post break\n");
 		// 10 second timeout, abort connection
 		if(abort_counter == 20){
 			close(sock);
@@ -494,15 +547,15 @@ int main(int argc, char* argv[]){
 		if(un_acked[0] == NULL && packets_resend > 0){
 			printf("shifting left");
 			shift_left(&un_acked);
-			printf("printing contents of un_acked\n");
-			for(n = 0; n < 10; n++){
-				if(un_acked[n] != NULL){
-					struct packet exp = *un_acked[n];
-					printf("sequence number: %d\n ", exp.packet_header.sequence_number);
-					printf("packet size: %d\n ", exp.packet_header.size);
-					printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
-				}	
-			}
+			// printf("printing contents of un_acked\n");
+			// for(n = 0; n < 10; n++){
+			// 	if(un_acked[n] != NULL){
+			// 		struct packet exp = *un_acked[n];
+			// 		printf("sequence number: %d\n ", exp.packet_header.sequence_number);
+			// 		printf("packet size: %d\n ", exp.packet_header.size);
+			// 		printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
+			// 	}	
+			// }
 		}
 
 
@@ -521,6 +574,7 @@ int main(int argc, char* argv[]){
 			ssthresh = max(cwnd/2, 1024);
 			cwnd = MINCWND;
 		}
+
 		retransmit = 0;
 		packets_awaiting_ack = 0;
 		printf("packets delivered: %d\n", packets_delivered);
