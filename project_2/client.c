@@ -317,7 +317,9 @@ int main(int argc, char* argv[]){
 	int retransmit = 0;
 	// int num_retransmitted_per_cycle = 0;
 	struct packet * r = malloc(sizeof(struct packet));
-			
+
+	// int tm_c = 0;
+
 	while(packets_delivered < exp_num_packets)
 	{
 		packets2send = cwnd / 512;
@@ -335,7 +337,9 @@ int main(int argc, char* argv[]){
 				// cwnd resets to 1, all packets to resend are backlogged
 				// p = **(un_acked+packets_awaiting_ack);
 				p = *un_acked[packets_awaiting_ack];
+				// p.packet_header.sequence_number = seqnum;
 				seqnum = p.packet_header.sequence_number;
+				printf("retransmitted packet in slot: %d\n", packets_awaiting_ack);
 				// packets_resend--;
 				// packets_resent++;
 				// num_retransmitted_per_cycle++;
@@ -354,12 +358,23 @@ int main(int argc, char* argv[]){
 						break;
 					}
 				}
+				printf("placed in slot: %d\n", count_checker);
+				
 			}
 			printf("sequence number for packet being sent: %d\n", p.packet_header.sequence_number);
 
-			fprintf(stdout, "SEND %d %d %d %d %s\n", p.packet_header.sequence_number, 0, cwnd, ssthresh, "ACK");
+			fprintf(stdout, "SEND %d %d %d %d\n", p.packet_header.sequence_number, 0, cwnd, ssthresh);
 
 //SEND hSeqNumi hAckNumi hcwndi hssthreshi [ACK] [SYN] [FIN] [DUP]
+			printf("printing contents of un_acked\n");
+			for(n = 0; n < 10; n++){
+				if(un_acked[n] != NULL){
+					struct packet exp = *un_acked[n];
+					printf("sequence number: %d\n ", exp.packet_header.sequence_number);
+					printf("packet size: %d\n ", exp.packet_header.size);
+					printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
+				}	
+			}
 
 
 
@@ -393,6 +408,35 @@ int main(int argc, char* argv[]){
 				if (n < 0){
 					fprintf(stderr, "ERROR: recvfrom");
 				}
+
+				printf("printing contents of un_acked\n");
+				for(n = 0; n < 10; n++){
+					if(un_acked[n] != NULL){
+						struct packet exp = *un_acked[n];
+						printf("sequence number: %d\n ", exp.packet_header.sequence_number);
+						printf("packet size: %d\n ", exp.packet_header.size);
+						printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
+					}	
+				}
+
+				struct packet exp = *un_acked[packets2send];
+				printf("packets2send val: %d\n", packets2send);
+				if(r->packet_header.ack_number != exp.packet_header.sequence_number + exp.packet_header.size){
+					printf("received ack number: %d, expected: %d\n", r->packet_header.ack_number, exp.packet_header.sequence_number + exp.packet_header.size);
+					printf("need to retransmit, not expected ack_number. \n");
+					abort_counter++;
+					// to resend all packets that are unacked after last acked
+					int un_ackchecker;
+					int count_unacks = 0;
+					for(un_ackchecker = 0; un_ackchecker < 10; un_ackchecker++){
+						if(un_acked[un_ackchecker] != NULL){
+							count_unacks++;
+						}
+					}
+					packets_resend = count_unacks;
+					retransmit = 1;
+					break;
+				}
 				packets_delivered++;
 				packets_awaiting_ack--;
 				// if acked, removed from unacked array
@@ -409,7 +453,7 @@ int main(int argc, char* argv[]){
 				seqnum = r->packet_header.ack_number;
 				ack = 0;
 				ack_flag = 0;
-				printf("sequence number for packet received: %d\n", seqnum);
+				printf("sequence number set to: %d\n", seqnum);
 				printf("ack number for packet received: %d\n", r->packet_header.ack_number);
 				abort_counter = 0;
 
@@ -447,7 +491,21 @@ int main(int argc, char* argv[]){
 		}
 
 		// should be able to only do this if packets_resend > 0
-		shift_left(&un_acked);
+		if(un_acked[0] == NULL && packets_resend > 0){
+			printf("shifting left");
+			shift_left(&un_acked);
+			printf("printing contents of un_acked\n");
+			for(n = 0; n < 10; n++){
+				if(un_acked[n] != NULL){
+					struct packet exp = *un_acked[n];
+					printf("sequence number: %d\n ", exp.packet_header.sequence_number);
+					printf("packet size: %d\n ", exp.packet_header.size);
+					printf("expected ack: %d\n ", exp.packet_header.sequence_number + exp.packet_header.size);
+				}	
+			}
+		}
+
+
 		if(!retransmit){
 			if(cwnd < ssthresh){
 				cwnd += 512;
@@ -650,8 +708,8 @@ int main(int argc, char* argv[]){
 	// increment sequence number
 	seqnum++;
 
-	time_t startTime = time(NULL);
-	printf("start time is: %ld\n", startTime);
+	// time_t startTime = time(NULL);
+	// printf("start time is: %ld\n", startTime);
 
 	// while(1){
 	// 	printf("difference is: %ld\n", time(NULL)-startTime);

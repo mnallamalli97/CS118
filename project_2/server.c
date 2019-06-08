@@ -117,6 +117,7 @@ int main(int argc, char* argv[]){
 	FILE * fp = NULL;
 
 	int sleepcounter = 0;
+	int dup_ack = 0;
 
 	while(1){
 		//every iteration, zero out the buffer
@@ -257,6 +258,17 @@ int main(int argc, char* argv[]){
 		}
 		else{
 			printf("received duplicate packet, did not process. Sequence number: %d\n", last_seq_rec);
+			dup_ack = prec->packet_header.sequence_number + prec->packet_header.size;
+			printf("seqnumber sent: %d\n", seqnum);
+			printf("ack sent: %d\n", ack);
+			struct udpheader packet_header = {seqnum, ack, ack_flag, syn_flag, fin_flag, 0, 0};
+			struct packet p = {packet_header};
+			int packet_written = sendto(sock, (struct packet*) &p, sizeof(p), 0, (struct sockaddr *) &clientaddr, sizeof(clientaddr));
+			if(packet_written <= 0){
+				fprintf(stderr, "unable to write to socket, dup");
+				exit(1);
+			}
+
 		}
 		// struct udpheader rec_header = prec->packet_header;
 
