@@ -1,7 +1,7 @@
 # CS118
 
 
-CS 118 UCLA, Winter 2018, with prof. Songwu Lu <br />
+CS 118 UCLA, Spring 2019, with prof. Songwu Lu <br />
 <br />
 Grades <br />
 Project 1: 50/50 <br />
