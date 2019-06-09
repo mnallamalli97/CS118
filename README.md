@@ -1,15 +1,15 @@
 # CS118
 
 
-CS 118 UCLA, Winter 2018, with prof. Songwu Lu 
-
-Grades 
-Project 1: 50/50 
-HW1: 50/50 
-HW2: 40/40 
-HW3: 50/50 
-HW4: 49/50 
-HW5: 40/50
-HW6: 48/50
-HW7: 50/50
+CS 118 UCLA, Winter 2018, with prof. Songwu Lu <br />
+<br />
+Grades <br />
+Project 1: 50/50 <br />
+HW1: 50/50 <br />
+HW2: 40/40 <br />
+HW3: 50/50 <br />
+HW4: 49/50 <br />
+HW5: 40/50 <br />
+HW6: 48/50 <br />
+HW7: 50/50 <br />
 HW8: 50/50
